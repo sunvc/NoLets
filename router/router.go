@@ -29,8 +29,6 @@ func SetupRouter(engine *gin.Engine) {
 
 	// 推送请求
 	router.POST("/push", controller.BasePush)
-	// 获取设备Token
-	router.GET("token/:deviceKey", controller.GetDeviceToken)
 	// title subtitle body
 	router.GET("/:deviceKey/:params1/:params2/:params3", controller.BasePush)
 	router.POST("/:deviceKey/:params1/:params2/:params3", controller.BasePush)

@@ -50,6 +50,7 @@ var SkipKeys = map[string]struct{}{
 	DeviceKeys:  {},
 	DeviceToken: {},
 	Title:       {},
+	Subtitle:    {},
 	Body:        {},
 	Sound:       {},
 	Category:    {},

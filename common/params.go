@@ -77,10 +77,6 @@ func NewParamsResult(c *gin.Context) *ParamsResult {
 	main.HandlerParamsToMapOrder(c)
 	main.PushType = ParamsNanAndDefault(main)
 
-	if main.PushType == -1 {
-		return nil
-	}
-
 	var resultKeys []string
 
 	if keys, ok := main.Params.Get(DeviceKeys); ok {

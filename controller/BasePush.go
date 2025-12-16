@@ -16,7 +16,17 @@ func BasePush(c *gin.Context) {
 
 	result := common.NewParamsResult(c)
 
-	if result == nil {
+	if result.PushType == -1 {
+		if len(result.Keys) > 0 {
+			deviceKey := result.Keys[0]
+			token, err := database.DB.DeviceTokenByKey(deviceKey)
+			if err != nil {
+				c.JSON(http.StatusOK, common.Failed(http.StatusInternalServerError, "failed to get device token: %v", err))
+				return
+			}
+			c.JSON(http.StatusOK, common.Success(token))
+			return
+		}
 		c.JSON(http.StatusOK, common.Failed(http.StatusBadRequest, "Incorrect Format"))
 		return
 	}
