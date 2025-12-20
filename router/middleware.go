@@ -84,8 +84,7 @@ func GCMDecryptMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		key := []byte(common.LocalConfig.System.SignKey)
-		if len(key) == 0 {
+		if len(common.LocalConfig.System.SignKey) < 10 {
 			c.Next()
 			return
 		}
@@ -110,7 +109,6 @@ func GCMDecryptMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		//timestamp, err := strconv.ParseInt(timestampStr, 10, 64)
 		timestamp, err := strconv.ParseFloat(timestampStr, 64)
 
 		if err != nil {

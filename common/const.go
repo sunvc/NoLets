@@ -16,6 +16,8 @@ const (
 	Subtitle         = "subtitle"               // 副标题
 	CipherText       = "ciphertext"             // 密文
 	Image            = "image"                  // 图片
+	Icon             = "icon"                   // 图标
+	Url              = "url"                    // 跳转地址
 	Body             = "body"                   // 内容
 	Content          = "content"                // 内容（兼容）
 	Text             = "text"                   // 内容（兼容）
@@ -24,7 +26,9 @@ const (
 	Group            = "group"                  // 组
 	Sound            = "sound"                  // 声音
 	AutoCopy         = "autocopy"               // 自动复制
+	Copy             = "copy"                   // 要复制的内容
 	Level            = "level"                  // 等级
+	Badge            = "badge"                  // 未读
 	Markdown         = "markdown"               // 是否是markdown格式
 	MD               = "md"                     // 是否是markdown格式（简写）
 	UserName         = "username"               // 用户名

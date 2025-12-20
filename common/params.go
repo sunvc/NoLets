@@ -87,7 +87,7 @@ func NewParamsResult(c *gin.Context) *ParamsResult {
 
 	if key, ok := main.Params.Get(DeviceKey); ok {
 		if val, oka := key.(string); oka {
-			resultKeys = append(resultKeys, val)
+			resultKeys = append(resultKeys, strings.Split(val, ",")...)
 		}
 	}
 
@@ -203,6 +203,15 @@ func (p *ParamsResult) HandlerParamsToMapOrder(c *gin.Context) {
 		}
 	}
 
+	ConvenientParamsHandler(result)
+
+	// 写入 ParamsResult.Params
+	for pair := result.Oldest(); pair != nil; pair = pair.Next() {
+		p.Params.Set(p.NormalizeKey(pair.Key), pair.Value)
+	}
+}
+
+func ConvenientParamsHandler(result *orderedmap.OrderedMap[string, interface{}]) {
 	// 先尝试从其他字段转换
 	if data, dataOk := result.Get(Data); dataOk {
 		result.Set(Body, fmt.Sprint(data))
@@ -249,11 +258,6 @@ func (p *ParamsResult) HandlerParamsToMapOrder(c *gin.Context) {
 				result.Set(Sound, fmt.Sprintf("%v.caf", sound))
 			}
 		}
-	}
-
-	// 写入 ParamsResult.Params
-	for pair := result.Oldest(); pair != nil; pair = pair.Next() {
-		p.Params.Set(p.NormalizeKey(pair.Key), pair.Value)
 	}
 }
 

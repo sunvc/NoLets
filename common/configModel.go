@@ -15,7 +15,7 @@ type Config struct {
 	Apple  Apple  `mapstructure:"apple" json:"apple" yaml:"apple" koanf:"apple"`
 }
 
-// System 是 NoLets/Bark 服务的配置结构体
+// System 是 NoLets 服务的配置结构体
 type System struct {
 	User                  string        `mapstructure:"user" json:"user" yaml:"user" koanf:"user"`
 	Password              string        `mapstructure:"password" json:"password" yaml:"password" koanf:"password"`

@@ -30,6 +30,11 @@ func SetupRouter(engine *gin.Engine) {
 
 	// 推送请求
 	router.POST("/push", controller.BasePush)
+
+	// MCP 服务
+	router.Any("/mcp", controller.MCPServer)
+	router.Any("/mcp/:deviceKey", controller.MCPServer)
+
 	// title subtitle body
 	router.GET("/:deviceKey/:params1/:params2/:params3", controller.BasePush)
 	router.POST("/:deviceKey/:params1/:params2/:params3", controller.BasePush)
