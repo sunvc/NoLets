@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/sunvc/NoLets/common"
+	"github.com/sunvc/NoLets/push"
 )
 
 // Home 处理首页请求
@@ -17,6 +18,17 @@ import (
 // 1. 通过id参数移除未推送数据
 // 2. 生成二维码图片
 func Home(c *gin.Context) {
+
+	if strings.ToUpper(c.Request.Method) == "POST" {
+		token, expiry := push.GetToken()
+		c.JSON(http.StatusOK, gin.H{
+			"code":      http.StatusOK,
+			"data":      token,
+			"expiry":    expiry,
+			"timestamp": time.Now().Unix(),
+		})
+		return
+	}
 
 	ua := strings.ToLower(c.GetHeader("User-Agent"))
 
@@ -30,7 +42,6 @@ func Home(c *gin.Context) {
 	}
 
 	if data := c.GetHeader("X-DATA"); len(data) > 10 {
-
 		ProxyDownload(c, data)
 		return
 	}

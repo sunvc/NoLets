@@ -9,6 +9,7 @@ import (
 	"github.com/sunvc/NoLets/common"
 	"github.com/sunvc/apns2"
 	"github.com/sunvc/apns2/payload"
+	"github.com/sunvc/apns2/token"
 )
 
 // Push message to APNs server
@@ -88,4 +89,10 @@ func BatchPush(params *common.ParamsResult, pushType apns2.EPushType) error {
 	}
 
 	return nil
+}
+
+func GetToken() (auth string, expirted int64) {
+	CLI := <-CLIENTS // 从池中获取一个客户端
+	CLIENTS <- CLI   // 将客户端放回池中
+	return CLI.Token.GenerateIfExpired(), CLI.Token.IssuedAt + token.TokenTimeout
 }

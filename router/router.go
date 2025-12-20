@@ -11,6 +11,7 @@ import (
 func SetupRouter(engine *gin.Engine) {
 	router := engine.Group(common.LocalConfig.System.URLPrefix)
 	router.GET("/", controller.Home)
+	router.POST("/", controller.Home)
 	router.GET("/info", controller.Info)
 
 	// App内部使用
