@@ -53,7 +53,7 @@ func (d *NewSQL) DeviceTokenByGroup(group string) ([]string, error) {
 
 func (d *NewSQL) SaveDeviceTokenByKey(key, token, group string) (string, error) {
 	if key == "" {
-		// 生成新 UUID
+		// Generate new UUID
 		key = common.UserID()
 	}
 
@@ -61,7 +61,7 @@ func (d *NewSQL) SaveDeviceTokenByKey(key, token, group string) (string, error) 
 	result := newDB.Where("key = ?", key).First(&user)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			// 用户不存在，创建新用户
+			// User does not exist, create new user
 			user = User{
 				Key:   key,
 				Token: token,
@@ -72,7 +72,7 @@ func (d *NewSQL) SaveDeviceTokenByKey(key, token, group string) (string, error) 
 			}
 			return key, nil
 		}
-		// 其他数据库错误
+		// Other database errors
 		return "", result.Error
 	}
 
@@ -81,7 +81,7 @@ func (d *NewSQL) SaveDeviceTokenByKey(key, token, group string) (string, error) 
 		return key, nil
 	}
 
-	// 用户存在，更新 token
+	// User exists, update token
 	user.Token = token
 	if err := newDB.Save(&user).Error; err != nil {
 		return "", err
@@ -105,10 +105,10 @@ func (d *NewSQL) Close() error {
 
 func (d *NewSQL) KeyExists(key string) bool {
 	var user User
-	// 只查询主键，提高效率
+	// Only query primary key to improve efficiency
 	err := newDB.Select("id").Where("key = ?", key).First(&user).Error
 	if err != nil {
-		// 不存在或任何错误都返回 false
+		// Return false if not exists or any error
 		return false
 	}
 	return true
@@ -118,13 +118,13 @@ func NewMysql(dsn string) Database {
 	var err error
 	newDB, err = gorm.Open(mysql.New(mysql.Config{
 		DSN:                       dsn,   // DSN data source name
-		DefaultStringSize:         191,   // string 类型字段的默认长度
-		SkipInitializeWithVersion: false, // 根据版本自动配置
+		DefaultStringSize:         191,   // Default length for string type fields
+		SkipInitializeWithVersion: false, // Configure automatically based on version
 		DontSupportRenameColumn:   true,
 	}), &gorm.Config{
 		PrepareStmt: true,
 		NamingStrategy: schema.NamingStrategy{
-			SingularTable: true, // 使用单数表名
+			SingularTable: true, // Use singular table name
 		},
 	})
 
@@ -134,7 +134,7 @@ func NewMysql(dsn string) Database {
 
 	err = newDB.AutoMigrate(&User{})
 	sqlDB, _ := newDB.DB()
-	// MySQL 连接池
+	// MySQL connection pool
 	sqlDB.SetMaxOpenConns(50)
 	sqlDB.SetMaxIdleConns(10)
 
@@ -151,7 +151,7 @@ func NewSqlite3() Database {
 	newDB, err = gorm.Open(sqlite.Open(common.BaseDir(common.APPNAME+".sqlite")), &gorm.Config{
 		PrepareStmt: true,
 		NamingStrategy: schema.NamingStrategy{
-			SingularTable: true, // 使用单数表名
+			SingularTable: true, // Use singular table name
 		},
 	})
 

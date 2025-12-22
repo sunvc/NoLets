@@ -9,6 +9,7 @@ import (
 	"github.com/sunvc/NoLets/common"
 )
 
+// GetImage handles image retrieval requests for logos and icons.
 func GetImage(c *gin.Context) {
 	fileName := c.Param("deviceKey")
 	color := c.Query("color")

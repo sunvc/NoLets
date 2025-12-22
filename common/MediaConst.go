@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+// LOGORAW contains the raw SVG content of the NoLets logo.
 const LOGORAW = `
 <svg  id="noletLogo" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 500 500" fill="currentColor">
   <polygon class="cls-1" points="99.8 457.6 67 493.4 20.4 482.3 6.5 435.5 39.2 399.6 85.9 410.8 99.8 457.6"/>
@@ -14,8 +15,10 @@ const LOGORAW = `
 </svg>
 `
 
+// StaticFS embeds the static files served by the application.
 var StaticFS *embed.FS
 
+// LogoSvgImage generates a base64-encoded SVG image or raw SVG string with the specified color.
 func LogoSvgImage(color string, svg bool) string {
 	color1 := "#ff0000"
 	if color != "" {

@@ -62,7 +62,7 @@ func ExportOrImport() {
 		}
 
 		err = os.WriteFile(common.BaseDir(filePath), data, 0644)
-		
+
 		if err != nil {
 			log.Println("Export Failed", err.Error())
 			return
@@ -88,7 +88,7 @@ func ExportOrImport() {
 				log.Println("Import Failed", err.Error())
 				return
 			}
-			log.Println("文件导出成功:", filePath)
+			log.Println("File export success:", filePath)
 		}
 	}
 }

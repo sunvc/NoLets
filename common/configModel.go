@@ -15,7 +15,6 @@ type Config struct {
 	Apple  Apple  `mapstructure:"apple" json:"apple" yaml:"apple" koanf:"apple"`
 }
 
-// System 是 NoLets 服务的配置结构体
 type System struct {
 	User                  string        `mapstructure:"user" json:"user" yaml:"user" koanf:"user"`
 	Password              string        `mapstructure:"password" json:"password" yaml:"password" koanf:"password"`
@@ -76,8 +75,7 @@ func (global *Config) SetConfig(configPath string) {
 		log.Fatal(err)
 		return
 	}
-
-	// 检查System字段
+	// check system params
 	if len(conf.System.User) > 0 {
 		global.System.User = conf.System.User
 	}
@@ -145,7 +143,6 @@ func (global *Config) SetConfig(configPath string) {
 		global.System.TimeZone = conf.System.TimeZone
 	}
 
-	// 检查Apple字段
 	if len(conf.Apple.ApnsPrivateKey) > 0 {
 		global.Apple.ApnsPrivateKey = conf.Apple.ApnsPrivateKey
 	}

@@ -15,11 +15,12 @@ import (
 	"github.com/sunvc/NoLets/common"
 )
 
+// CreateSSL generates a self-signed TLS certificate if it doesn't exist.
 func CreateSSL() {
 	keyPath := common.BaseDir("key.pem")
 	certPath := common.BaseDir("cert.pem")
 
-	// 如果证书已存在则跳过
+	// If cert already exists, skip generation
 	if _, err := os.Stat(certPath); err == nil {
 		log.Printf("CreateSSL: cert already exists at %s, skip generation", certPath)
 		common.LocalConfig.System.Key = keyPath
@@ -27,13 +28,13 @@ func CreateSSL() {
 		return
 	}
 
-	// 生成ECDSA私钥
+	// Generate ECDSA private key
 	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		panic(err)
 	}
 
-	// 设置证书模板
+	// Set certificate template
 	serialNumber, err := rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 128))
 	if err != nil {
 		panic(err)
@@ -58,13 +59,13 @@ func CreateSSL() {
 		EmailAddresses:        []string{"to@wzs.app"},
 	}
 
-	// 自签名证书
+	// Self-sign the certificate
 	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, &privateKey.PublicKey, privateKey)
 	if err != nil {
 		panic(err)
 	}
 
-	// 将证书和私钥写入文件
+	// Write certificate and private key to files
 	certOut, err := os.Create(certPath)
 	if err != nil {
 		panic(err)
@@ -86,7 +87,7 @@ func CreateSSL() {
 
 	pem.Encode(keyOut, &pem.Block{Type: "EC PRIVATE KEY", Bytes: marshaledKey})
 
-	println("生成自签名TLS证书成功")
+	println("CreateSSL: self-signed TLS certificate generated successfully")
 
 	common.LocalConfig.System.Key = keyPath
 	common.LocalConfig.System.Cert = certPath

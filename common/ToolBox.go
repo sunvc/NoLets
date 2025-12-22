@@ -46,7 +46,7 @@ func Unique[T comparable](list []T) []T {
 	return result
 }
 
-// Contains 判断切片中是否包含指定元素
+// Contains checks if the slice contains the specified element
 func Contains[T comparable](slice []T, val T) bool {
 	for _, v := range slice {
 		if v == val {
@@ -80,33 +80,33 @@ func GetClientHost(c *gin.Context) string {
 }
 
 func IsFileInDirectory(dirPath, fileName string) (bool, error) {
-	// 对目录路径进行规范化处理
+	// Normalize the directory path
 	dirPath = filepath.Clean(dirPath)
 
-	// 检查目录是否存在
+	// Check if the directory exists
 	dirInfo, err := os.Stat(dirPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return false, nil // 目录不存在时，直接返回文件不在目录中
+			return false, nil // If the directory does not exist, return that the file is not in the directory
 		}
-		return false, fmt.Errorf("检查目录状态出错: %w", err)
+		return false, fmt.Errorf("Error checking directory status: %w", err)
 	}
 
-	// 确认路径指向的是一个目录
+	// Confirm that the path points to a directory
 	if !dirInfo.IsDir() {
-		return false, fmt.Errorf("路径 %q 不是一个目录", dirPath)
+		return false, fmt.Errorf("Path %q is not a directory", dirPath)
 	}
 
-	// 构建文件的完整路径
+	// Build the full path of the file
 	filePath := filepath.Join(dirPath, fileName)
 
-	// 检查文件是否存在
+	// Check if the file exists
 	_, err = os.Stat(filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return false, nil // 文件不存在
+			return false, nil // File does not exist
 		}
-		return false, fmt.Errorf("检查文件状态出错: %w", err)
+		return false, fmt.Errorf("Error checking file status: %w", err)
 	}
 
 	return true, nil
@@ -132,8 +132,8 @@ func InterfaceSliceToStringSlice(input []interface{}) []string {
 		if str, ok := v.(string); ok {
 			result = append(result, str)
 		} else {
-			// 如果类型不是 string，可以选择忽略或报错
-			// 这里选择忽略非字符串类型
+			// If the type is not string, you can choose to ignore or report an error
+			// Here we choose to ignore non-string types
 		}
 	}
 	return result
@@ -141,7 +141,7 @@ func InterfaceSliceToStringSlice(input []interface{}) []string {
 
 func Decrypt(signText string, key string) (string, error) {
 
-	// Base64 URL Safe -> 标准 Base64
+	// Base64 URL Safe -> Standard Base64
 	signText = strings.ReplaceAll(signText, "-", "+")
 	signText = strings.ReplaceAll(signText, "_", "/")
 	if m := len(signText) % 4; m != 0 {
@@ -172,7 +172,7 @@ func Decrypt(signText string, key string) (string, error) {
 		return "", errors.New("missing signature")
 	}
 
-	// CryptoKit 是把 tag 单独放在尾部，需要拼接到 ciphertext
+	// CryptoKit puts the tag separately at the end, need to append to ciphertext
 	decrypted, err := aesgcm.Open(nil, nonce, append(ciphertext, tag...), nil)
 	if err != nil {
 

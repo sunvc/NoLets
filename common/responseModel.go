@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+// BaseResp represents the standard JSON response structure for the API.
 type BaseResp struct {
 	Code      int         `json:"code"`
 	Message   string      `json:"message"`
@@ -12,8 +13,7 @@ type BaseResp struct {
 	Timestamp int64       `json:"timestamp"`
 }
 
-// for the fast return Success result
-
+// Success creates a successful response (HTTP 200) with optional data.
 func Success(data ...interface{}) BaseResp {
 	var result interface{}
 
@@ -28,8 +28,7 @@ func Success(data ...interface{}) BaseResp {
 	}
 }
 
-// for the fast return Failed result
-
+// Failed creates a failed response with the specified error code and formatted message.
 func Failed(code int, message string, args ...interface{}) BaseResp {
 	return BaseResp{
 		Code:      code,
@@ -38,8 +37,7 @@ func Failed(code int, message string, args ...interface{}) BaseResp {
 	}
 }
 
-// for the fast return result with custom data
-
+// BaseRes creates a custom response with the specified status code, message, and optional data.
 func BaseRes(code int, message string, data ...interface{}) BaseResp {
 	var result interface{}
 
@@ -61,6 +59,7 @@ type DeviceInfo struct {
 	Group string `json:"group,omitempty"`
 }
 
+// DateNow returns the current time in UTC.
 func DateNow() time.Time {
 	return time.Now().UTC()
 }

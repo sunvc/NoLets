@@ -7,11 +7,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/wk8/go-ordered-map/v2"
+	orderedmap "github.com/wk8/go-ordered-map/v2"
 )
 
-// ParamsResult 结构体用于存储和管理请求参数
-// 使用有序映射存储参数，保证参数的处理顺序
+// ParamsResult struct is used to store and manage request parameters.
+// It uses an ordered map to store parameters, ensuring the processing order of parameters.
 type ParamsResult struct {
 	Params   *orderedmap.OrderedMap[string, interface{}]
 	Tokens   []string
@@ -19,12 +19,12 @@ type ParamsResult struct {
 	PushType int
 }
 
-// Get 获取参数值
-// 参数:
-//   - key: 参数键名
+// Get parameter value
+// params:
+//   - key: parameter key
 //
-// 返回:
-//   - interface{}: 参数值，如果不存在则返回空字符串
+// return:
+//   - interface{}: parameter value, returns empty string if not exists
 func (p *ParamsResult) Get(key string) interface{} {
 	if value, ok := p.Params.Get(key); ok {
 		return value
@@ -39,15 +39,15 @@ func (p *ParamsResult) GetString(key string) string {
 	return ""
 }
 
-// NormalizeKey 规范化参数键名
-// 主要功能:
-// 1. 去除所有的符号,空格
-// 2. 转为小写, 只保留数字,字母
-// 参数:
-//   - s: 需要规范化的键名字符串
+// NormalizeKey normalizes the parameter key.
+// Main functions:
+// 1. Removes all symbols and spaces.
+// 2. Converts to lowercase, keeping only numbers and letters.
+// Parameters:
+//   - s: The key string to be normalized.
 //
-// 返回:
-//   - string: 规范化后的键名
+// Returns:
+//   - string: The normalized key.
 func (p *ParamsResult) NormalizeKey(s string) string {
 	b := make([]byte, 0, len(s))
 	for i := 0; i < len(s); i++ {
@@ -62,12 +62,12 @@ func (p *ParamsResult) NormalizeKey(s string) string {
 	return strings.ToLower(string(b))
 }
 
-// NewParamsResult 创建新的参数结果对象
-// 参数:
-//   - c: gin上下文对象，用于获取请求参数
+// NewParamsResult creates a new parameter result object.
+// Parameters:
+//   - c: The gin context object, used to get request parameters.
 //
-// 返回:
-//   - *ParamsResult: 初始化后的参数结果对象
+// Returns:
+//   - *ParamsResult: The initialized parameter result object.
 func NewParamsResult(c *gin.Context) *ParamsResult {
 	main := &ParamsResult{
 		Params: orderedmap.New[string, interface{}](),
@@ -112,22 +112,22 @@ func NewParamsResult(c *gin.Context) *ParamsResult {
 	return main
 }
 
-// HandlerParamsToMapOrder 处理请求参数并转换为有序映射
-// 主要功能：
-// 1. 从URL路径参数中提取设备密钥、标题、副标题和内容
-// 2. 从URL查询参数中获取额外参数
-// 3. 处理POST请求的表单数据和JSON数据
-// 4. 对参数进行便捷处理
-// 5. 将处理后的参数保存到有序映射中
+// HandlerParamsToMapOrder processes request parameters and converts them to an ordered map.
+// Main functions:
+// 1. Extracts device key, title, subtitle, and content from URL path parameters.
+// 2. Gets additional parameters from URL query parameters.
+// 3. Processes form data and JSON data from POST requests.
+// 4. Performs convenient processing on parameters.
+// 5. Saves the processed parameters into an ordered map.
 func (p *ParamsResult) HandlerParamsToMapOrder(c *gin.Context) {
 	result := orderedmap.New[string, interface{}]()
 
-	// 判断是否是管理员
+	// Check if it is an admin
 	host := GetClientHost(c)
 	if Admin(c) {
 		result.Set(Host, host)
 	}
-	// 兼容旧版本
+	// Compatible with old versions
 	result.Set(Callback, host)
 
 	getDeviceKey := func(value string) {
@@ -205,14 +205,14 @@ func (p *ParamsResult) HandlerParamsToMapOrder(c *gin.Context) {
 
 	ConvenientParamsHandler(result)
 
-	// 写入 ParamsResult.Params
+	// Write to ParamsResult.Params
 	for pair := result.Oldest(); pair != nil; pair = pair.Next() {
 		p.Params.Set(p.NormalizeKey(pair.Key), pair.Value)
 	}
 }
 
 func ConvenientParamsHandler(result *orderedmap.OrderedMap[string, interface{}]) {
-	// 先尝试从其他字段转换
+	// Try to convert from other fields first
 	if data, dataOk := result.Get(Data); dataOk {
 		result.Set(Body, fmt.Sprint(data))
 		result.Delete(Data)
@@ -227,31 +227,31 @@ func ConvenientParamsHandler(result *orderedmap.OrderedMap[string, interface{}])
 		result.Delete(Text)
 	}
 
-	// 处理 markdown 字段
-	// 如果存在 markdown 字段，将其转换为 body 并设置 category 为 markdown
+	// Process markdown fields
+	// If markdown field exists, convert it to body and set category to markdown
 	if v, ok := result.Get(Markdown); ok {
 		result.Set(Body, fmt.Sprint(v))
 		result.Set(Category, CategoryMarkdown)
 		result.Delete(Markdown)
 
 	}
-	// 如果存在 md 字段，将其转换为 body 并设置 category 为 markdown
+	// If md field exists, convert it to body and set category to markdown
 	if v, ok := result.Get(MD); ok {
 		result.Set(Body, fmt.Sprint(v))
 		result.Set(Category, CategoryMarkdown)
 		result.Delete(MD)
 	}
 
-	// 规范化 category 字段
-	// 如果 category 不是默认值或 markdown，则设置为默认值
+	// Normalize category field
+	// If category is not default or markdown, set it to default
 	if v, ok := result.Get(Category); ok {
 		if v != CategoryDefault && v != CategoryMarkdown {
 			result.Set(Category, CategoryDefault)
 		}
 	}
 
-	// 处理声音文件后缀
-	// 如果声音文件没有 .caf 后缀，则添加后缀
+	// Process sound file suffix
+	// If the sound file does not have a .caf suffix, add it
 	if val, ok := result.Get(Sound); ok {
 		if sound, oka := val.(string); oka {
 			if !strings.HasSuffix(sound, ".caf") {
@@ -279,7 +279,7 @@ func ParamsNanAndDefault(paramsResult *ParamsResult) (resultType int) {
 
 	contentNan := titleNan && subTitleNan && bodyNan && cipherNan && imageNan
 
-	// ---- resultType 逻辑 ----
+	// ---- resultType logic ----
 	switch {
 	case contentNan && !idNan:
 		resultType = 0
@@ -290,12 +290,12 @@ func ParamsNanAndDefault(paramsResult *ParamsResult) (resultType int) {
 		return
 	}
 
-	// ---- 补充 body: "-" 的逻辑 ----
+	// ---- Logic to supplement body: "-" ----
 	if (!cipherNan || !imageNan) && titleNan && subTitleNan && bodyNan {
 		paramsResult.Params.Set(Body, "-")
 	}
 
-	// ---- 默认值处理 ----
+	// ---- Default value processing ----
 	setDefault := func(key string, defaultValue interface{}) {
 		realKey := paramsResult.NormalizeKey(key)
 		if v, ok := paramsResult.Params.Get(realKey); !ok || v == nil || len(strings.TrimSpace(fmt.Sprint(v))) == 0 {

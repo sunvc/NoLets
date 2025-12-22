@@ -9,7 +9,7 @@ import (
 	"github.com/sunvc/apns2"
 )
 
-// MARK: - 推送任务
+// MARK: - Push Task
 
 var NotPushedDataList sync.Map
 
@@ -18,6 +18,8 @@ var oneDo sync.Once
 func init() {
 	oneDo.Do(CirclePush)
 }
+
+// CirclePush starts the periodic push task loop.
 func CirclePush() {
 	go func() {
 		ticker := time.NewTicker(10 * time.Minute)
@@ -28,27 +30,27 @@ func CirclePush() {
 			NotPushedDataList.Range(func(key, value any) bool {
 				data1, ok := value.(*common.NotPushedData)
 				if !ok {
-					NotPushedDataList.Delete(key) // 类型异常也清除
+					NotPushedDataList.Delete(key) // Type assertion failed, delete
 					return true
 				}
 
 				now := common.DateNow()
 
-				// 超过 24 小时未成功推送，直接清除
+				// If not pushed for 24 hours, delete
 				if now.Sub(data1.LastPushDate) > 24*time.Hour {
 					NotPushedDataList.Delete(key)
 					return true
 				}
 
-				// 推送节流策略：每次失败后等待 Count × 10 分钟
+				// Push throttle strategy: wait Count × 10 minutes after each failure
 				nextTry := data1.LastPushDate.Add(time.Duration(data1.Count) * 10 * time.Minute)
 				if nextTry.After(now) {
-					return true // 还没到下一次推送时间，跳过
+					return true // Not time to push yet, skip
 				}
 
-				// 执行推送
+				// Execute push
 				if err := push.BatchPush(data1.Params, data1.PushType); err != nil {
-					NotPushedDataList.Delete(key) // 推送失败直接删
+					NotPushedDataList.Delete(key) // Push failed, delete
 				}
 
 				return true
@@ -58,7 +60,7 @@ func CirclePush() {
 
 }
 
-// UpdateNotPushedData 更新已有记录，若不存在则添加
+// UpdateNotPushedData updates existing not-pushed data or adds a new record.
 func UpdateNotPushedData(id string, params *common.ParamsResult, pushType apns2.EPushType) {
 	if val, ok := NotPushedDataList.Load(id); ok {
 		res := val.(*common.NotPushedData)
@@ -66,7 +68,7 @@ func UpdateNotPushedData(id string, params *common.ParamsResult, pushType apns2.
 		res.Count++
 		res.Params = params
 		res.PushType = pushType
-		NotPushedDataList.Store(id, common.Success) // 可省略，但保持一致性
+		NotPushedDataList.Store(id, common.Success) // Can be omitted, but kept for consistency
 	} else {
 		NotPushedDataList.Store(id, &common.NotPushedData{
 			ID:           id,

@@ -22,6 +22,7 @@ func AppleSite(c *gin.Context) {
 	})
 }
 
+// RobotText handles robots.txt requests.
 func RobotText(c *gin.Context) {
 	c.String(http.StatusOK, "User-agent: * \nDisallow: / \nAllow: /$ \n")
 }

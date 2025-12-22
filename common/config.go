@@ -9,6 +9,7 @@ import (
 	"github.com/goccy/go-yaml"
 )
 
+// LocalConfig is the global configuration instance.
 var LocalConfig = &Config{
 	System: System{
 		User:                  "",
@@ -87,10 +88,8 @@ func SynchronousFieldFile() {
 # ============================================
 
 `
-	// 拼接注释头 + YAML 内容
 	finalData := append([]byte(header), data...)
 
-	// 输出到文件
 	if err = os.WriteFile("config.yaml", finalData, 0644); err != nil {
 		panic(err)
 	}

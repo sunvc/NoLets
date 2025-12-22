@@ -8,7 +8,7 @@ import (
 	"github.com/sunvc/NoLets/serverInfo"
 )
 
-// GetServerInfo 返回服务器监控信息
+// GetServerInfo returns server monitoring information.
 func GetServerInfo(c *gin.Context) {
 
 	if Verification(c) {

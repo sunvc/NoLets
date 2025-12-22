@@ -14,24 +14,24 @@ func SetupRouter(engine *gin.Engine) {
 	router.POST("/", controller.Home)
 	router.GET("/info", controller.Info)
 
-	// App内部使用
+	// Used internally by the App
 	router.GET("/ping", controller.Ping)
 	router.GET("/health", controller.Health)
 	router.GET("/monitor", controller.GetServerInfo)
 
-	// 注册
+	// Register
 	router.GET("/register/:deviceKey", GCMDecryptMiddleware(), controller.Register)
-	router.POST("/register", GCMDecryptMiddleware(), controller.Register)
+	router.POST("/register", GCMDecryptMiddleware(), controller.Restore)
 	router.GET("/robots.txt", controller.RobotText)
 	wellKnowGroup := router.Group("/.well-known")
 	{
 		wellKnowGroup.GET("/apple-app-site-association", controller.AppleSite)
 	}
 
-	// 推送请求
+	// Push requests
 	router.POST("/push", controller.BasePush)
 
-	// MCP 服务
+	// MCP Service
 	router.Any("/mcp", controller.MCPServer)
 	router.Any("/mcp/:deviceKey", controller.MCPServer)
 
@@ -45,7 +45,7 @@ func SetupRouter(engine *gin.Engine) {
 	router.GET("/:deviceKey/:params1", controller.BasePush)
 	router.POST("/:deviceKey/:params1", controller.BasePush)
 
-	// 参数化的推送
+	// Parameterized push
 	router.GET("/:deviceKey", CheckDotParamMiddleware(), controller.BasePush)
 	router.POST("/:deviceKey", controller.BasePush)
 

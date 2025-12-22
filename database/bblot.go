@@ -138,20 +138,20 @@ func bboltSetup(dataDir string) {
 	})
 }
 
-// KeyExists 检查指定的 key 是否存在于数据库中，只返回 bool 值
+// KeyExists checks if the specified key exists in the database, returns only bool value
 func (d *BboltDB) KeyExists(key string) bool {
 	err := BBDB.View(func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket([]byte(common.APPNAME))
 		if bucket == nil {
 			return fmt.Errorf("bucket %s not found", common.APPNAME)
 		}
-		// 检查 key 是否存在
+		// Check if key exists
 		if bucket.Get([]byte(key)) != nil {
-			return nil // key 存在，返回 nil 表示没有错误
+			return nil // key exists, return nil indicating no error
 		}
-		return fmt.Errorf("key not found") // key 不存在，返回错误
+		return fmt.Errorf("key not found") // key does not exist, return error
 	})
 
-	// 如果 err 为 nil，说明 key 存在，否则 key 不存在
+	// If err is nil, it means key exists, otherwise key does not exist
 	return err == nil
 }

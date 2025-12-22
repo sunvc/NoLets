@@ -6,30 +6,30 @@ import (
 	"golang.org/x/net/http2"
 )
 
-// CloseAPNSClients 关闭所有APNS客户端资源
+// CloseAPNSClients closes all APNS client resources
 func CloseAPNSClients() {
-	// 关闭channel并清理资源
+	// Close channel and clean up resources
 	if CLIENTS != nil {
-		// 尝试关闭所有客户端连接
+		// Try to close all client connections
 		clientCount := len(CLIENTS)
 		for i := 0; i < clientCount; i++ {
 			select {
 			case client := <-CLIENTS:
-				// 如果客户端有需要特别关闭的资源，可以在这里处理
-				// 例如关闭HTTP客户端的连接池等
+				// If the client has resources that need to be closed specially, handle them here
+				// For example, close the HTTP client connection pool
 				if client != nil && client.HTTPClient != nil && client.HTTPClient.Transport != nil {
-					// 尝试关闭transport
+					// Try to close transport
 					if transport, ok := client.HTTPClient.Transport.(*http2.Transport); ok && transport != nil {
 						transport.CloseIdleConnections()
 					}
 				}
 			default:
-				// channel已空
+				// Channel is empty
 				break
 			}
 		}
 
-		// 记录关闭信息
+		// Log close information
 		log.Println("All APNS clients have been closed")
 	}
 }

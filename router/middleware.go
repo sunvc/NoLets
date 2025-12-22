@@ -19,7 +19,7 @@ func Verification() gin.HandlerFunc {
 		requestID, _ := uuid.NewUUID()
 		c.Set("trace_id", requestID)
 
-		// 先查看是否是管理员身份
+		// First check if it is admin identity
 		authHeader := c.GetHeader("Authorization")
 		if common.Contains[string](common.LocalConfig.System.Auths, authHeader) && authHeader != "" {
 			c.Set("admin", true)
@@ -28,12 +28,12 @@ func Verification() gin.HandlerFunc {
 
 		localUser := common.LocalConfig.System.User
 		localPassword := common.LocalConfig.System.Password
-		// 配置了账号密码，进行身份校验
+		// Configured account password, perform identity verification
 		if localUser != "" && localPassword != "" {
-			// 优先使用 Basic Auth
+			// Prioritize Basic Auth
 			user, pass, hasAuth := c.Request.BasicAuth()
 			if !hasAuth {
-				// 如果没有 Basic Auth，则尝试从查询参数中获取
+				// If no Basic Auth, try to get from query parameters
 				user = c.Query(common.UserName)
 				pass = c.Query(common.Password)
 
@@ -54,13 +54,13 @@ func Verification() gin.HandlerFunc {
 
 		}
 
-		// 如果没有身份验证信息
+		// If no authentication information
 		c.Set("admin", false)
 		c.Next()
 	}
 }
 
-// CheckDotParamMiddleware 检查 GET 请求第一个 path 参数是否包含 '.'
+// CheckDotParamMiddleware checks if the first path parameter of the GET request contains '.'
 func CheckDotParamMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if value := c.Param("deviceKey"); strings.Contains(value, ".") {
@@ -68,7 +68,7 @@ func CheckDotParamMiddleware() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		// 放行请求
+		// Allow request
 		c.Next()
 	}
 }
@@ -131,7 +131,7 @@ func GCMDecryptMiddleware() gin.HandlerFunc {
 		}
 
 		log.Println("Signature verification successful！")
-		// 解密成功，存入 context
+		// Decryption successful, save to context
 		c.Set("decrypted", timestamp)
 		c.Next()
 

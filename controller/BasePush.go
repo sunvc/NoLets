@@ -10,8 +10,8 @@ import (
 	"github.com/sunvc/apns2"
 )
 
-// BasePush 处理基础推送请求
-// 验证推送参数并执行推送操作
+// BasePush handles basic push requests.
+// It validates push parameters and executes the push operation.
 func BasePush(c *gin.Context) {
 
 	result := common.NewParamsResult(c)
@@ -65,7 +65,7 @@ func BasePush(c *gin.Context) {
 	}
 
 	pushType := func() apns2.EPushType {
-		// 如果 title, subtitle 和 body 都为空，设置静默推送模式
+		// If title, subtitle, and body are all empty, set silent push mode
 		if result.PushType == 0 {
 			return apns2.PushTypeBackground
 		}
@@ -77,7 +77,7 @@ func BasePush(c *gin.Context) {
 		return
 	}
 
-	// 如果是管理员，加入到未推送列表
+	// If admin, add to not-pushed list
 	if id, ok := result.Get(common.ID).(string); common.Admin(c) && ok && len(id) > 0 {
 		UpdateNotPushedData(id, result, pushType)
 	}

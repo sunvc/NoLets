@@ -29,7 +29,7 @@ func Push(params *common.ParamsResult, pushType apns2.EPushType, token string) e
 			Category(params.GetString(common.Category))
 	}
 
-	// 添加自定义参数
+	// Add custom parameters
 	for pair := params.Params.Oldest(); pair != nil; pair = pair.Next() {
 		if _, skip := common.SkipKeys[pair.Key]; skip {
 			continue
@@ -37,10 +37,10 @@ func Push(params *common.ParamsResult, pushType apns2.EPushType, token string) e
 		pl.Custom(pair.Key, pair.Value)
 	}
 
-	CLI := <-CLIENTS // 从池中获取一个客户端
-	CLIENTS <- CLI   // 将客户端放回池中
+	CLI := <-CLIENTS // Get a client from the pool
+	CLIENTS <- CLI   // Put the client back into the pool
 
-	// 创建并发送通知
+	// Create and send notification
 	resp, err := CLI.Push(&apns2.Notification{
 		DeviceToken: token,
 		CollapseID:  params.GetString(common.ID),
@@ -50,7 +50,7 @@ func Push(params *common.ParamsResult, pushType apns2.EPushType, token string) e
 		PushType:    pushType,
 	})
 
-	// 错误处理
+	// Error handling
 	if err != nil {
 		return err
 	}
@@ -92,7 +92,7 @@ func BatchPush(params *common.ParamsResult, pushType apns2.EPushType) error {
 }
 
 func GetToken() (auth string, expirted int64) {
-	CLI := <-CLIENTS // 从池中获取一个客户端
-	CLIENTS <- CLI   // 将客户端放回池中
+	CLI := <-CLIENTS // Get a client from the pool
+	CLIENTS <- CLI   // Put the client back into the pool
 	return CLI.Token.GenerateIfExpired(), CLI.Token.IssuedAt + token.TokenTimeout
 }

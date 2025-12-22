@@ -13,10 +13,10 @@ import (
 	"github.com/sunvc/NoLets/push"
 )
 
-// Home 处理首页请求
-// 支持两种功能:
-// 1. 通过id参数移除未推送数据
-// 2. 生成二维码图片
+// Home handles page requests.
+// It supports two functions:
+// 1. Remove unpunished data via id parameter
+// 2. Generate QR code image
 func Home(c *gin.Context) {
 
 	if strings.ToUpper(c.Request.Method) == "POST" {
@@ -63,12 +63,13 @@ func Home(c *gin.Context) {
 	})
 }
 
+// ProxyDownload decrypts the download URL and initiates the proxy download process.
 func ProxyDownload(c *gin.Context, data string) {
 	if !common.LocalConfig.System.ProxyDownload {
 		c.String(http.StatusBadRequest, "missing")
 		return
 	}
-	// 获取用户请求的下载地址
+	// Get the download URL from user request
 	targetURL, err := common.Decrypt(data, common.LocalConfig.System.SignKey)
 
 	if err != nil {
@@ -79,6 +80,8 @@ func ProxyDownload(c *gin.Context, data string) {
 
 }
 
+// DownloadProject handles project download requests.
+// It supports three platforms: Windows, macOS, and Linux.
 func DownloadProject(c *gin.Context) {
 	goos := strings.ToLower(c.GetHeader("os"))
 	var name string
@@ -103,6 +106,7 @@ func DownloadProject(c *gin.Context) {
 
 }
 
+// ProxyDownloadData performs the actual HTTP request to fetch the file and streams the response back to the client.
 func ProxyDownloadData(c *gin.Context, targetURL string) {
 
 	if targetURL == "" {
@@ -118,15 +122,15 @@ func ProxyDownloadData(c *gin.Context, targetURL string) {
 		ForceAttemptHTTP2:   true,
 	}
 
-	// 发起请求获取远程文件
-	// 2. 创建带超时的HTTP客户端
+	// Initiate request to fetch remote file
+	// 2. Create HTTP client with timeout
 	client := &http.Client{
 		Transport: transport,
 		Timeout:   30 * time.Second,
 	}
 
 	req, _ := http.NewRequest("GET", targetURL, nil)
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:146.0) Gecko/20100101 Firefox/146.0") // CDN 必须加 UA，否则降速
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:146.0) Gecko/20100101 Firefox/146.0") // CDN requires UA, otherwise speed will be limited
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -135,14 +139,12 @@ func ProxyDownloadData(c *gin.Context, targetURL string) {
 	}
 	defer resp.Body.Close()
 
-	// 设置返回头，保持文件名或类型
 	for k, v := range resp.Header {
 		if len(v) > 0 {
 			c.Writer.Header().Set(k, v[0])
 		}
 	}
 
-	// 直接流式复制响应体给用户
 	c.Status(resp.StatusCode)
 	_, _ = io.Copy(c.Writer, resp.Body)
 }

@@ -15,7 +15,8 @@ import (
 	orderedmap "github.com/wk8/go-ordered-map/v2"
 )
 
-// MCPServer 通用端点：device_key 通过工具参数传入
+// MCPServer handles MCP server requests.
+// DeviceKey is passed via path parameter.
 func MCPServer(c *gin.Context) {
 
 	deviceKey := c.Param("deviceKey")

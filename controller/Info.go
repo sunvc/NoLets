@@ -29,8 +29,8 @@ func Info(c *gin.Context) {
 	c.JSON(http.StatusOK, results)
 }
 
-// Ping 处理心跳检测请求
-// 返回服务器当前状态
+// Ping handles heartbeat requests.
+// Returns current server status.
 func Ping(c *gin.Context) {
 	c.JSON(http.StatusOK, common.BaseResp{
 		Code:      http.StatusOK,
@@ -39,8 +39,10 @@ func Ping(c *gin.Context) {
 	})
 }
 
+// Health handles health check requests.
 func Health(c *gin.Context) { c.String(http.StatusOK, "OK") }
 
+// Verification checks if the user has admin privileges.
 func Verification(c *gin.Context) bool {
 	admin, ok := c.Get("admin")
 	return ok && admin.(bool)

@@ -130,21 +130,21 @@ func main() {
 
 			ctxShutdown, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
-			// 关闭HTTP服务器
-			if err := server.Shutdown(ctxShutdown); err != nil {
-				log.Printf("Server forced to shutdown error: %v", err)
-			}
+			// Close HTTP server
+	if err := server.Shutdown(ctxShutdown); err != nil {
+		log.Printf("Server forced to shutdown error: %v", err)
+	}
 
-			// 关闭数据库连接
-			if err := database.DB.Close(); err != nil {
-				log.Printf("Database close error: %v", err)
-			}
+	// Close database connection
+	if err := database.DB.Close(); err != nil {
+		log.Printf("Database close error: %v", err)
+	}
 
-			// 关闭APNS客户端资源
-			push.CloseAPNSClients()
+	// Close APNS client resources
+	push.CloseAPNSClients()
 
-			log.Println("All resources have been properly released")
-			return nil
+	log.Println("All resources have been properly released")
+	return nil
 		},
 	}
 

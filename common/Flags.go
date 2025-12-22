@@ -8,6 +8,8 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
+// Flags returns the list of command-line flags supported by the application.
+// These flags configure various aspects of the system, including server settings, database connection, APNs credentials, and more.
 func Flags() []cli.Flag {
 	return []cli.Flag{
 		&cli.StringFlag{
