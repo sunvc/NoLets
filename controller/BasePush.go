@@ -42,9 +42,7 @@ func BasePush(c *gin.Context) {
 		}
 		result.Tokens = common.Unique(result.Tokens)
 
-		passwd := common.LocalConfig.System.PushPassword
-
-		if len(passwd) > 0 && passwd == c.GetHeader("X-PUSH-PASSWD") {
+		if Verification(c) {
 
 			if name, ok := result.Params.Get(common.PushGroupName); ok {
 				if nameStr, bok := name.(string); bok {
