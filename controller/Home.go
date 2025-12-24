@@ -41,11 +41,6 @@ func Home(c *gin.Context) {
 		return
 	}
 
-	if data := c.GetHeader("X-DATA"); len(data) > 10 {
-		ProxyDownload(c, data)
-		return
-	}
-
 	if id := c.Query("id"); id != "" {
 		NotPushedDataList.Delete(id)
 		c.Status(http.StatusOK)
@@ -61,23 +56,6 @@ func Home(c *gin.Context) {
 		"BACKGROUNDSVG": template.URL(common.LogoSvgImage("ff00000f", false)),
 		"DOCS":          "https://wiki.wzs.app",
 	})
-}
-
-// ProxyDownload decrypts the download URL and initiates the proxy download process.
-func ProxyDownload(c *gin.Context, data string) {
-	if !common.LocalConfig.System.ProxyDownload {
-		c.String(http.StatusBadRequest, "missing")
-		return
-	}
-	// Get the download URL from user request
-	targetURL, err := common.Decrypt(data, common.LocalConfig.System.SignKey)
-
-	if err != nil {
-		c.String(http.StatusBadRequest, "missing X-DATA header")
-		return
-	}
-	ProxyDownloadData(c, targetURL)
-
 }
 
 // DownloadProject handles project download requests.
