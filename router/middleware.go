@@ -19,9 +19,8 @@ func Verification() gin.HandlerFunc {
 		requestID, _ := uuid.NewUUID()
 		c.Set("trace_id", requestID)
 
-		// First check if it is admin identity
-		authHeader := c.GetHeader("Authorization")
-		if common.Contains[string](common.LocalConfig.System.Auths, authHeader) && authHeader != "" {
+		device := c.GetHeader("X-Device")
+		if common.Contains[string](common.LocalConfig.System.Auths, device) && device != "" {
 			c.Set("admin", true)
 			return
 		}
@@ -88,7 +87,7 @@ func GCMDecryptMiddleware() gin.HandlerFunc {
 			c.Next()
 			return
 		}
-		header := c.GetHeader("X-Signature")
+		header := c.GetHeader("Authorization")
 
 		if header == "" {
 			c.AbortWithStatusJSON(http.StatusOK, common.Failed(
