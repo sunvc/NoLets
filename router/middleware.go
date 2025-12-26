@@ -89,6 +89,10 @@ func GCMDecryptMiddleware() gin.HandlerFunc {
 		}
 		header := c.GetHeader("Authorization")
 
+		if sign := c.GetHeader("X-Signature"); sign != "" {
+			header = sign
+		}
+
 		if header == "" {
 			c.AbortWithStatusJSON(http.StatusOK, common.Failed(
 				http.StatusUnauthorized,
