@@ -1,6 +1,8 @@
 
 # NoLetServer
 
+![](https://status.wzs.app/api/badge/1/uptime/24?style=for-the-badge)
+
 [English](./README_EN.md) | [日本語](./README_JP.md) | [한국어](./README_KR.md)
 
 ## 安装与运行
