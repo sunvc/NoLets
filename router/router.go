@@ -20,8 +20,8 @@ func SetupRouter(engine *gin.Engine) {
 	router.GET("/monitor", controller.GetServerInfo)
 
 	// Register
-	router.GET("/register/:deviceKey", GCMDecryptMiddleware(), controller.Register)
-	router.POST("/register", GCMDecryptMiddleware(), controller.Restore)
+	router.GET("/register/:deviceKey", GCMDecryptMiddleware(), controller.Restore)
+	router.POST("/register", GCMDecryptMiddleware(), controller.Register)
 	router.GET("/robots.txt", controller.RobotText)
 	wellKnowGroup := router.Group("/.well-known")
 	{

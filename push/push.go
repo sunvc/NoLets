@@ -69,21 +69,20 @@ func BatchPush(params *common.ParamsResult, pushType apns2.EPushType) error {
 		wg     sync.WaitGroup
 	)
 
-	for _, token := range params.Tokens {
-
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			if err := Push(params, pushType, token); err != nil {
+	for _, tokenStr := range params.Tokens {
+		/// 1.25 版本新语法
+		wg.Go(func() {
+			if err := Push(params, pushType, tokenStr); err != nil {
 				log.Println(err.Error())
 				mu.Lock()
 				errors = append(errors, err)
 				mu.Unlock()
 			}
-		}()
+		})
 	}
 
 	wg.Wait()
+
 	if len(errors) > 0 {
 		return fmt.Errorf("APNs push failed: %v", errors)
 	}

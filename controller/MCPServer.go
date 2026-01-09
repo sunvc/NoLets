@@ -87,7 +87,7 @@ func notifyHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallT
 
 func getCommonToolOpts(deviceKey string) []mcp.ToolOption {
 	tools := []mcp.ToolOption{
-		mcp.WithDescription("Send a notification to a device via Nolet"),
+		mcp.WithDescription("Send a message to your ios device, use Nolet"),
 
 		mcp.WithString(common.Title,
 			mcp.Description("Notification title"),
