@@ -51,7 +51,7 @@ func Home(c *gin.Context) {
 
 	c.HTML(http.StatusOK, "index.html", gin.H{
 		"ICP":           common.LocalConfig.System.ICPInfo,
-		"URL":           template.URL(url),
+		"URL":           template.URL(fmt.Sprintf("pb://server?text=%s", url)),
 		"LOGORAW":       template.HTML(common.LOGORAW),
 		"BACKGROUNDSVG": template.URL(common.LogoSvgImage("ff00000f", false)),
 		"DOCS":          "https://wiki.wzs.app",
