@@ -1,9 +1,6 @@
-
 services:
   NoLets:
     image: ghcr.io/sunvc/nolet:latest
-    depends_on:
-      - mysql
     container_name: NoLets
     restart: always
     ports:
@@ -12,23 +9,4 @@ services:
       - ./data:/data
     environment:
       - NOLET_SIGN_KEY=
-      - NOLET_SERVER_DSN=root:root@tcp(mysql:3306)/NoLet?charset=utf8mb4&parseTime=True&loc=Local
-      - NOLET_AUTHS=13123
-    networks:
-      - backend
-
-  mysql:
-    image: mysql:latest
-    container_name: mysql
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: NoLet
-    volumes:
-      - ./data/mysql:/var/lib/mysql
-    networks:
-      - backend
-
-networks:
-  backend:
-    driver: bridge
+      - NOLET_AUTHS=

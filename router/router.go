@@ -17,7 +17,8 @@ func SetupRouter(engine *gin.Engine) {
 	// Used internally by the App
 	router.GET("/ping", controller.Ping)
 	router.GET("/health", controller.Health)
-	router.GET("/monitor", controller.GetServerInfo)
+	router.GET("/ping/monitor", controller.GetServerInfo)
+	router.GET("/ping/processes", controller.GetProcesses)
 
 	// Register
 	router.GET("/register/:deviceKey", GCMDecryptMiddleware(), controller.Restore)

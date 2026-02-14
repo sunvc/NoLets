@@ -12,12 +12,18 @@ import (
 func GetServerInfo(c *gin.Context) {
 
 	if Verification(c) {
-		data, err := serverInfo.GetServerInfo()
-		if err != nil {
-			c.JSON(http.StatusOK, gin.H{})
-			return
-		}
-		c.Data(http.StatusOK, common.MIMEApplicationJSON, data)
+		c.JSON(http.StatusOK, serverInfo.FetchData())
+	} else {
+		c.JSON(http.StatusOK, common.Failed(200, "No Permission!"))
+	}
+
+}
+
+// GetProcesses returns server monitoring information.
+func GetProcesses(c *gin.Context) {
+
+	if Verification(c) {
+		c.JSON(http.StatusOK, serverInfo.FetchProcesses())
 	} else {
 		c.JSON(http.StatusOK, common.Failed(200, "No Permission!"))
 	}
