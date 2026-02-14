@@ -20,7 +20,7 @@ func Verification() gin.HandlerFunc {
 		c.Set("trace_id", requestID)
 
 		device := c.GetHeader("X-Device")
-		if common.Contains[string](common.LocalConfig.System.Auths, device) && device != "" {
+		if device != "" && common.Contains[string](common.LocalConfig.System.Auths, device) {
 			c.Set("admin", true)
 			return
 		}
