@@ -354,7 +354,7 @@ REJP/5bp
 			Sources:     cli.EnvVars("NOLET_IMPORT_PATH"),
 			Aliases:     []string{"dr"},
 			Value:       "",
-			Destination: &LocalConfig.System.ExportPath,
+			Destination: &LocalConfig.System.ImportPath,
 		},
 
 		&cli.BoolFlag{
