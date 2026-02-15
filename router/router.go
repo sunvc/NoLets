@@ -13,21 +13,20 @@ func SetupRouter(engine *gin.Engine) {
 	router.GET("/", controller.Home)
 	router.POST("/", controller.Home)
 
-	router.GET("/info", controller.Info)
-
 	// Used internally by the App
 	router.GET("/ping", controller.Ping)
 	router.GET("/health", controller.Health)
 	router.GET("/healthz", controller.Health)
-
-	// Register
-	router.GET("/register/:deviceKey", GCMDecryptMiddleware(), controller.Restore)
-	router.POST("/register", GCMDecryptMiddleware(), controller.Register)
+	router.GET("/info", controller.Info)
 	router.GET("/robots.txt", controller.RobotText)
 	wellKnowGroup := router.Group("/.well-known")
 	{
 		wellKnowGroup.GET("/apple-app-site-association", controller.AppleSite)
 	}
+
+	// Register
+	router.GET("/register/:deviceKey", GCMDecryptMiddleware(), controller.Restore)
+	router.POST("/register", GCMDecryptMiddleware(), controller.Register)
 
 	// Push requests
 	router.POST("/push", controller.BasePush)

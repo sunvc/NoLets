@@ -75,6 +75,11 @@ func CheckDotParamMiddleware() gin.HandlerFunc {
 func GCMDecryptMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
+		if common.Admin(c) {
+			c.Next()
+			return
+		}
+
 		c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 512)
 
 		userAgent := c.GetHeader(common.HeaderUserAgent)

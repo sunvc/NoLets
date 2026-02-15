@@ -49,9 +49,7 @@ func Restore(c *gin.Context) {
 		c.JSON(http.StatusOK, common.Success())
 		return
 	} else {
-		admin := Verification(c)
-		if admin {
-
+		if common.Admin(c) {
 			_, err := database.DB.SaveDeviceTokenByKey(deviceKey, "", "")
 			if err == nil {
 				c.JSON(http.StatusOK, common.Success())

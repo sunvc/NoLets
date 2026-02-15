@@ -14,7 +14,7 @@ import (
 func Info(c *gin.Context) {
 
 	mode := c.Query("mode")
-	admin := Verification(c)
+	admin := common.Admin(c)
 
 	if admin && mode == "monitor" {
 		c.JSON(http.StatusOK, serverInfo.FetchData())
@@ -55,9 +55,3 @@ func Ping(c *gin.Context) {
 
 // Health handles health check requests.
 func Health(c *gin.Context) { c.String(http.StatusOK, "OK") }
-
-// Verification checks if the user has admin privileges.
-func Verification(c *gin.Context) bool {
-	admin, ok := c.Get("admin")
-	return ok && admin.(bool)
-}

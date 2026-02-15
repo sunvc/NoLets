@@ -42,7 +42,7 @@ func BasePush(c *gin.Context) {
 		}
 		result.Tokens = common.Unique(result.Tokens)
 
-		if Verification(c) {
+		if common.Admin(c) {
 
 			if name, ok := result.Params.Get(common.PushGroupName); ok {
 				if nameStr, bok := name.(string); bok {

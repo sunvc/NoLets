@@ -396,26 +396,6 @@ func (c *collector) containerStats(ctx context.Context, id string) (container.St
 	return decoded, nil
 }
 
-// Helpers
-
-func valueOrZero(values []float64) float64 {
-	if len(values) == 0 {
-		return 0
-	}
-	return values[0]
-}
-
-func sumCPUTimes(t cpu.TimesStat) float64 {
-	return t.User + t.System + t.Idle + t.Iowait + t.Steal + t.Nice + t.Irq + t.Softirq + t.Guest + t.GuestNice
-}
-
-func ratio(part, total float64) float64 {
-	if total == 0 {
-		return 0
-	}
-	return part / total
-}
-
 // compute overall CPU percentages using delta between samples
 func (c *collector) computeCPU(curr []cpu.TimesStat) (total, system, user, iowait, steal, idle float64) {
 	if len(curr) == 0 {
@@ -528,22 +508,6 @@ func rate(current, previous uint64, elapsed time.Duration) float64 {
 func isVirtualInterface(name string) bool {
 	virtualPrefixes := []string{"lo", "docker", "br-", "veth", "virbr", "vmnet", "tun", "tap", "gif", "stf", "p2p", "awdl", "utun"}
 	for _, prefix := range virtualPrefixes {
-		if len(name) >= len(prefix) && name[:len(prefix)] == prefix {
-			return true
-		}
-	}
-	return false
-}
-
-// mac-specific: filter out known virtual/system-only interfaces
-func isMacVirtual(name string) bool {
-	if runtime.GOOS != "darwin" {
-		return false
-	}
-	macVirtualPrefixes := []string{
-		"gif", "stf", "p2p", "awdl", "llw", "utun", "ap", "anpi", "bridge", "pktap", "awpp",
-	}
-	for _, prefix := range macVirtualPrefixes {
 		if len(name) >= len(prefix) && name[:len(prefix)] == prefix {
 			return true
 		}
