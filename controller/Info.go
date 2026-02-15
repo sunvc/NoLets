@@ -8,10 +8,24 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/sunvc/NoLets/common"
 	"github.com/sunvc/NoLets/database"
+	"github.com/sunvc/NoLets/serverInfo"
 )
 
 func Info(c *gin.Context) {
+
+	mode := c.Query("mode")
 	admin := Verification(c)
+
+	if admin && mode == "monitor" {
+		c.JSON(http.StatusOK, serverInfo.FetchData())
+		return
+	}
+
+	if admin && mode == "processes" {
+		c.JSON(http.StatusOK, serverInfo.FetchProcesses())
+		return
+	}
+
 	system := common.LocalConfig.System
 
 	results := gin.H{

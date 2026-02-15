@@ -12,13 +12,13 @@ func SetupRouter(engine *gin.Engine) {
 	router := engine.Group(common.LocalConfig.System.URLPrefix)
 	router.GET("/", controller.Home)
 	router.POST("/", controller.Home)
+
 	router.GET("/info", controller.Info)
 
 	// Used internally by the App
 	router.GET("/ping", controller.Ping)
 	router.GET("/health", controller.Health)
-	router.GET("/ping/monitor", controller.GetServerInfo)
-	router.GET("/ping/processes", controller.GetProcesses)
+	router.GET("/healthz", controller.Health)
 
 	// Register
 	router.GET("/register/:deviceKey", GCMDecryptMiddleware(), controller.Restore)

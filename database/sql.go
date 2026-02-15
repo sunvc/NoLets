@@ -168,7 +168,7 @@ func NewSqlite3() Database {
 	sqlDB, _ := newDB.DB()
 	_, _ = sqlDB.Exec(`PRAGMA journal_mode = WAL;`)
 
-	sqlDB.SetMaxOpenConns(5)
+	sqlDB.SetMaxOpenConns(10)
 	sqlDB.SetMaxIdleConns(2)
 	sqlDB.SetConnMaxLifetime(time.Hour)
 

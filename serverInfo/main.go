@@ -674,10 +674,7 @@ func topProcesses(ctx context.Context, limit int) []SCProcessResponse {
 		cpuPct, _ := p.CPUPercentWithContext(ctx)
 		memInfo, _ := p.MemoryInfoWithContext(ctx)
 		memPct, _ := p.MemoryPercentWithContext(ctx)
-		// skip empty results to keep list small
-		if cpuPct == 0 && (memInfo == nil || memInfo.RSS == 0) {
-			continue
-		}
+
 		result = append(result, SCProcessResponse{
 			PID:        p.Pid,
 			Name:       name,
