@@ -2,7 +2,6 @@ package common
 
 import (
 	"context"
-	"log"
 	"time"
 
 	"github.com/urfave/cli/v3"
@@ -18,10 +17,6 @@ func Flags() []cli.Flag {
 			Sources:     cli.EnvVars("NOLET_SERVER_ADDRESS"),
 			Value:       "0.0.0.0:8080",
 			Destination: &LocalConfig.System.Addr,
-			Action: func(ctx context.Context, command *cli.Command, s string) error {
-				LocalConfig.System.Addr = s
-				return nil
-			},
 		},
 		&cli.StringFlag{
 			Name:        "url-prefix",
@@ -29,10 +24,6 @@ func Flags() []cli.Flag {
 			Sources:     cli.EnvVars("NOLET_SERVER_URL_PREFIX"),
 			Value:       "/",
 			Destination: &LocalConfig.System.URLPrefix,
-			Action: func(ctx context.Context, command *cli.Command, s string) error {
-				LocalConfig.System.URLPrefix = s
-				return nil
-			},
 		},
 		&cli.StringFlag{
 			Name:        "dir",
@@ -40,40 +31,24 @@ func Flags() []cli.Flag {
 			Sources:     cli.EnvVars("NOLET_SERVER_DATA_DIR"),
 			Value:       "./data",
 			Destination: &LocalConfig.System.DataDir,
-			Action: func(ctx context.Context, command *cli.Command, s string) error {
-				LocalConfig.System.DataDir = s
-				return nil
-			},
 		},
 		&cli.StringFlag{
 			Name:        "dsn",
 			Usage:       "MySQL DSN user:pass@tcp(host)/dbname",
 			Sources:     cli.EnvVars("NOLET_SERVER_DSN"),
 			Destination: &LocalConfig.System.DSN,
-			Action: func(ctx context.Context, command *cli.Command, s string) error {
-				LocalConfig.System.DSN = s
-				return nil
-			},
 		},
 		&cli.StringFlag{
 			Name:        "cert",
 			Usage:       "Server TLS certificate",
 			Sources:     cli.EnvVars("NOLET_SERVER_CERT"),
 			Destination: &LocalConfig.System.Cert,
-			Action: func(ctx context.Context, command *cli.Command, s string) error {
-				LocalConfig.System.Cert = s
-				return nil
-			},
 		},
 		&cli.StringFlag{
 			Name:        "key",
 			Usage:       "Server TLS certificate key",
 			Sources:     cli.EnvVars("NOLET_SERVER_KEY"),
 			Destination: &LocalConfig.System.Key,
-			Action: func(ctx context.Context, command *cli.Command, s string) error {
-				LocalConfig.System.Key = s
-				return nil
-			},
 		},
 		&cli.BoolFlag{
 			Name:        "reduce-memory-usage",
@@ -81,10 +56,6 @@ func Flags() []cli.Flag {
 			Sources:     cli.EnvVars("NOLET_SERVER_REDUCE_MEMORY_USAGE"),
 			Value:       false,
 			Destination: &LocalConfig.System.ReduceMemoryUsage,
-			Action: func(ctx context.Context, command *cli.Command, b bool) error {
-				LocalConfig.System.ReduceMemoryUsage = b
-				return nil
-			},
 		},
 		&cli.StringFlag{
 			Name:        "user",
@@ -93,10 +64,6 @@ func Flags() []cli.Flag {
 			Aliases:     []string{"u"},
 			Destination: &LocalConfig.System.User,
 			Value:       "",
-			Action: func(ctx context.Context, command *cli.Command, s string) error {
-				LocalConfig.System.User = s
-				return nil
-			},
 		},
 		&cli.StringFlag{
 			Name:        "password",
@@ -105,10 +72,6 @@ func Flags() []cli.Flag {
 			Aliases:     []string{"p"},
 			Destination: &LocalConfig.System.Password,
 			Value:       "",
-			Action: func(ctx context.Context, command *cli.Command, s string) error {
-				LocalConfig.System.Password = s
-				return nil
-			},
 		},
 		&cli.StringFlag{
 			Name:        "push-password",
@@ -116,10 +79,6 @@ func Flags() []cli.Flag {
 			Sources:     cli.EnvVars("NOLET_PUSH_PASSWORD"),
 			Destination: &LocalConfig.System.PushPassword,
 			Value:       "",
-			Action: func(ctx context.Context, command *cli.Command, s string) error {
-				LocalConfig.System.PushPassword = s
-				return nil
-			},
 		},
 		&cli.StringFlag{
 			Name:        "sign-key",
@@ -128,10 +87,6 @@ func Flags() []cli.Flag {
 			Aliases:     []string{"sk"},
 			Destination: &LocalConfig.System.SignKey,
 			Value:       "",
-			Action: func(ctx context.Context, command *cli.Command, s string) error {
-				LocalConfig.System.SignKey = s
-				return nil
-			},
 		},
 		&cli.StringFlag{
 			Name:        "proxy-header",
@@ -139,10 +94,6 @@ func Flags() []cli.Flag {
 			Sources:     cli.EnvVars("NOLET_SERVER_PROXY_HEADER"),
 			Destination: &LocalConfig.System.ProxyHeader,
 			Value:       "",
-			Action: func(ctx context.Context, command *cli.Command, s string) error {
-				LocalConfig.System.ProxyHeader = s
-				return nil
-			},
 		},
 		&cli.IntFlag{
 			Name:        "max-batch-push-count",
@@ -150,10 +101,6 @@ func Flags() []cli.Flag {
 			Sources:     cli.EnvVars("NOLET_SERVER_MAX_BATCH_PUSH_COUNT"),
 			Value:       -1,
 			Destination: &LocalConfig.System.MaxBatchPushCount,
-			Action: func(ctx context.Context, command *cli.Command, v int) error {
-				LocalConfig.System.MaxBatchPushCount = v
-				return nil
-			},
 		},
 		&cli.IntFlag{
 			Name:        "max-apns-client-count",
@@ -162,10 +109,6 @@ func Flags() []cli.Flag {
 			Aliases:     []string{"max"},
 			Value:       1,
 			Destination: &LocalConfig.System.MaxAPNSClientCount,
-			Action: func(ctx context.Context, command *cli.Command, v int) error {
-				LocalConfig.System.MaxAPNSClientCount = v
-				return nil
-			},
 		},
 		&cli.IntFlag{
 			Name:        "max-device-key-arr-length",
@@ -173,10 +116,6 @@ func Flags() []cli.Flag {
 			Sources:     cli.EnvVars("NOLET_CONCURRENCY"),
 			Value:       10,
 			Destination: &LocalConfig.System.MaxDeviceKeyArrLength,
-			Action: func(ctx context.Context, command *cli.Command, b int) error {
-				LocalConfig.System.MaxDeviceKeyArrLength = b
-				return nil
-			},
 		},
 		&cli.IntFlag{
 			Name:        "concurrency",
@@ -185,10 +124,6 @@ func Flags() []cli.Flag {
 			Value:       256 * 1024,
 			Hidden:      true,
 			Destination: &LocalConfig.System.Concurrency,
-			Action: func(ctx context.Context, command *cli.Command, b int) error {
-				LocalConfig.System.Concurrency = b
-				return nil
-			},
 		},
 		&cli.DurationFlag{
 			Name:        "read-timeout",
@@ -197,10 +132,6 @@ func Flags() []cli.Flag {
 			Value:       3 * time.Second,
 			Hidden:      true,
 			Destination: &LocalConfig.System.ReadTimeout,
-			Action: func(ctx context.Context, command *cli.Command, duration time.Duration) error {
-				LocalConfig.System.ReadTimeout = duration
-				return nil
-			},
 		},
 		&cli.DurationFlag{
 			Name:        "write-timeout",
@@ -209,10 +140,6 @@ func Flags() []cli.Flag {
 			Value:       10 * time.Second,
 			Hidden:      true,
 			Destination: &LocalConfig.System.WriteTimeout,
-			Action: func(ctx context.Context, command *cli.Command, duration time.Duration) error {
-				LocalConfig.System.WriteTimeout = duration
-				return nil
-			},
 		},
 		&cli.DurationFlag{
 			Name:        "idle-timeout",
@@ -221,10 +148,6 @@ func Flags() []cli.Flag {
 			Value:       10 * time.Second,
 			Hidden:      true,
 			Destination: &LocalConfig.System.IdleTimeout,
-			Action: func(ctx context.Context, command *cli.Command, duration time.Duration) error {
-				LocalConfig.System.IdleTimeout = duration
-				return nil
-			},
 		},
 		&cli.BoolFlag{
 			Name:        "debug",
@@ -232,10 +155,6 @@ func Flags() []cli.Flag {
 			Usage:       "enable debug mode",
 			Sources:     cli.EnvVars("NOLET_DEBUG"),
 			Destination: &LocalConfig.System.Debug,
-			Action: func(ctx context.Context, command *cli.Command, b bool) error {
-				LocalConfig.System.Debug = b
-				return nil
-			},
 		},
 		&cli.StringSliceFlag{
 			Name:        "auths",
@@ -243,10 +162,6 @@ func Flags() []cli.Flag {
 			Usage:       "auth id list",
 			Sources:     cli.EnvVars("NOLET_AUTHS"),
 			Destination: &LocalConfig.System.Auths,
-			Action: func(ctx context.Context, command *cli.Command, strings []string) error {
-				LocalConfig.System.Auths = strings
-				return nil
-			},
 		},
 		&cli.StringFlag{
 			Name:        "apns-private-key",
@@ -259,10 +174,6 @@ o7ErdZQFZM7Qxho6m61gqZuGVRigCgYIKoZIzj0DAQehRANCAAQ8ReU0fBNg+sA+
 ZdDf3w+8FRQxFBKSD/Opt7n3tmtnmnl9Vrtw/nUXX4ldasxA2gErXR4YbEL9Z+uJ
 REJP/5bp
 -----END PRIVATE KEY-----`,
-			Action: func(ctx context.Context, command *cli.Command, s string) error {
-				LocalConfig.Apple.ApnsPrivateKey = s
-				return nil
-			},
 		},
 		&cli.StringFlag{
 			Name:        "topic",
@@ -270,10 +181,6 @@ REJP/5bp
 			Sources:     cli.EnvVars("NOLET_APPLE_TOPIC"),
 			Destination: &LocalConfig.Apple.Topic,
 			Value:       "me.uuneo.Meoworld",
-			Action: func(ctx context.Context, command *cli.Command, s string) error {
-				LocalConfig.Apple.Topic = s
-				return nil
-			},
 		},
 		&cli.StringFlag{
 			Name:        "key-id",
@@ -281,10 +188,6 @@ REJP/5bp
 			Sources:     cli.EnvVars("NOLET_APPLE_KEY_ID"),
 			Destination: &LocalConfig.Apple.KeyID,
 			Value:       "BNY5GUGV38",
-			Action: func(ctx context.Context, command *cli.Command, s string) error {
-				LocalConfig.Apple.KeyID = s
-				return nil
-			},
 		},
 		&cli.StringFlag{
 			Name:        "team-id",
@@ -292,10 +195,6 @@ REJP/5bp
 			Sources:     cli.EnvVars("NOLET_APPLE_TEAM_ID"),
 			Destination: &LocalConfig.Apple.TeamID,
 			Value:       "FUWV6U942Q",
-			Action: func(ctx context.Context, command *cli.Command, s string) error {
-				LocalConfig.Apple.TeamID = s
-				return nil
-			},
 		},
 		&cli.BoolFlag{
 			Name:        "develop",
@@ -304,10 +203,6 @@ REJP/5bp
 			Aliases:     []string{"dev"},
 			Value:       false,
 			Destination: &LocalConfig.Apple.Develop,
-			Action: func(ctx context.Context, command *cli.Command, b bool) error {
-				LocalConfig.Apple.Develop = b
-				return nil
-			},
 		},
 		&cli.StringFlag{
 			Name:        "ICP",
@@ -316,11 +211,6 @@ REJP/5bp
 			Aliases:     []string{"icp"},
 			Destination: &LocalConfig.System.ICPInfo,
 			Value:       "",
-			Action: func(ctx context.Context, command *cli.Command, s string) error {
-				log.Println(s)
-				LocalConfig.System.ICPInfo = s
-				return nil
-			},
 		},
 		&cli.StringFlag{
 			Name:    "config",
@@ -335,10 +225,6 @@ REJP/5bp
 			Aliases:     []string{"dp"},
 			Value:       false,
 			Destination: &LocalConfig.System.ProxyDownload,
-			Action: func(ctx context.Context, command *cli.Command, b bool) error {
-				LocalConfig.System.ProxyDownload = b
-				return nil
-			},
 		},
 		&cli.StringFlag{
 			Name:        "export-path",
@@ -363,10 +249,6 @@ REJP/5bp
 			Sources:     cli.EnvVars("NOLET_CUSTOM_HTTPS"),
 			Value:       false,
 			Destination: &LocalConfig.System.CustomHttps,
-			Action: func(ctx context.Context, command *cli.Command, b bool) error {
-				LocalConfig.System.CustomHttps = b
-				return nil
-			},
 		},
 
 		&cli.BoolFlag{
