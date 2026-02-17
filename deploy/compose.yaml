@@ -1,0 +1,18 @@
+services:
+  NoLets:
+    image: sunvc/nolet:latest
+    container_name: NoLets
+    restart: always
+    ports:
+      - "8080:8080"
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+    volumes:
+      - ./data:/app/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - NOLET_SIGN_KEY= # 加密参数
+      - TZ=Asia/Shanghai # 时区 默认 UTC
+      - NOLET_AUTHS= #[ADMIN ID 列表]

@@ -194,7 +194,6 @@ func (c *collector) snapshot(ctx context.Context) SCServerStatusResponse {
 	netResp := c.collectNetwork(ctx, elapsed)
 	disks := c.collectDisks(ctx, elapsed)
 	containers := c.collectDocker(ctx, elapsed)
-	processes := topProcesses(ctx, 100)
 
 	return SCServerStatusResponse{
 		Name:               name,
@@ -214,7 +213,7 @@ func (c *collector) snapshot(ctx context.Context) SCServerStatusResponse {
 		Network:            netResp,
 		Disks:              disks,
 		Containers:         containers,
-		Processes:          processes,
+		Processes:          []SCProcessResponse{},
 	}
 }
 
@@ -261,8 +260,7 @@ func (c *collector) collectNetwork(ctx context.Context, elapsed time.Duration) S
 		}
 	}
 
-	active, passive, fail := tcpStats(ctx)
-	established, timeWait, closeWait, synRecv := tcpStateCounts(ctx)
+	active, passive, fail, established, timeWait, closeWait, synRecv := tcpMetrics(ctx)
 	retransRate := 0.0
 	if tcp, err := gonet.ProtoCountersWithContext(ctx, []string{"tcp"}); err == nil && len(tcp) > 0 {
 		retr := tcp[0].Stats["RetransSegs"]
@@ -345,27 +343,34 @@ func (c *collector) collectDocker(ctx context.Context, elapsed time.Duration) []
 		return nil
 	}
 
-	list, err := c.dockerClient.ContainerList(ctx, container.ListOptions{})
+	list, err := c.dockerClient.ContainerList(ctx, container.ListOptions{
+		All: true,
+	})
+
 	if err != nil {
 		return nil
 	}
 
 	results := make([]SCContainerResponse, 0, len(list))
 	for _, item := range list {
-		stats, err := c.containerStats(ctx, item.ID)
-		if err != nil {
-			continue
-		}
-
-		cpuPercent := dockerCPUPercent(stats)
-		mem := float64(stats.MemoryStats.Usage)
-		netRx, netTx := dockerNet(stats)
-		blkRead, blkWrite := dockerBlockIO(stats)
-
 		name := item.Names
 		containerName := item.ID[:12]
 		if len(name) > 0 {
 			containerName = trimSlash(name[0])
+		}
+
+		cpuPercent := 0.0
+		mem := 0.0
+		netRx, netTx := 0.0, 0.0
+		blkRead, blkWrite := 0.0, 0.0
+
+		// Keep container entry even when stats are temporarily unavailable
+		// (e.g. restarting/exited container or short timeout).
+		if stats, err := c.containerStats(ctx, item.ID); err == nil {
+			cpuPercent = dockerCPUPercent(stats)
+			mem = float64(stats.MemoryStats.Usage)
+			netRx, netTx = dockerNet(stats)
+			blkRead, blkWrite = dockerBlockIO(stats)
 		}
 
 		results = append(results, SCContainerResponse{
@@ -546,39 +551,27 @@ func ipForInterface(name string) *string {
 	return nil
 }
 
-func tcpStats(ctx context.Context) (active, passive, fail int) {
+func tcpMetrics(ctx context.Context) (active, passive, fail, established, timeWait, closeWait, synRecv int) {
+	hasSNMP := false
 	if runtime.GOOS == "linux" {
 		// Prefer /proc/net/snmp for accurate counters
 		if a, p, f, ok := readProcNetSNMP(); ok {
-			return a, p, f
+			active, passive, fail = a, p, f
+			hasSNMP = true
 		}
 	}
 
-	// Fallback: connection state counts (less accurate, esp. on macOS)
-	conns, err := gonet.ConnectionsWithContext(ctx, "tcp")
-	if err != nil {
-		return 0, 0, 0
-	}
-	for _, c := range conns {
-		switch c.Status {
-		case "SYN-SENT":
-			active++
-		case "SYN-RECEIVED":
-			passive++
-		case "CLOSE":
-			fail++
-		}
-	}
-	return active, passive, fail
-}
-
-func tcpStateCounts(ctx context.Context) (established, timeWait, closeWait, synRecv int) {
+	// Scan TCP connections once and reuse for all TCP-related metrics.
 	conns, err := gonet.ConnectionsWithContext(ctx, "tcp")
 	if err != nil {
 		return
 	}
 	for _, c := range conns {
 		switch c.Status {
+		case "SYN_SENT", "SYN-SENT":
+			if !hasSNMP {
+				active++
+			}
 		case "ESTABLISHED":
 			established++
 		case "TIME_WAIT":
@@ -587,9 +580,17 @@ func tcpStateCounts(ctx context.Context) (established, timeWait, closeWait, synR
 			closeWait++
 		case "SYN_RECV", "SYN-RECEIVED":
 			synRecv++
+			if !hasSNMP {
+				passive++
+			}
+		case "CLOSE":
+			if !hasSNMP {
+				fail++
+			}
 		}
 	}
-	return
+
+	return active, passive, fail, established, timeWait, closeWait, synRecv
 }
 
 func dockerCPUPercent(stats container.StatsResponse) float64 {
@@ -616,10 +617,10 @@ func dockerNet(stats container.StatsResponse) (rx float64, tx float64) {
 
 func dockerBlockIO(stats container.StatsResponse) (read float64, write float64) {
 	for _, entry := range stats.BlkioStats.IoServiceBytesRecursive {
-		switch entry.Op {
-		case "Read":
+		switch strings.ToLower(entry.Op) {
+		case "read":
 			read += float64(entry.Value)
-		case "Write":
+		case "write":
 			write += float64(entry.Value)
 		}
 	}
@@ -831,9 +832,13 @@ func detectRootDevice(parts []disk.PartitionStat) string {
 var collectorMain = newCollector()
 
 func FetchData() SCServerStatusResponse {
-	return collectorMain.snapshot(context.Background())
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	return collectorMain.snapshot(ctx)
 }
 
 func FetchProcesses() []SCProcessResponse {
-	return topProcesses(context.Background(), 100)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	return topProcesses(ctx, 100)
 }

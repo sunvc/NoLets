@@ -129,7 +129,7 @@ func Flags() []cli.Flag {
 			Name:        "read-timeout",
 			Usage:       "The amount of time allowed to read the full request, including the body",
 			Sources:     cli.EnvVars("NOLET_SERVER_READ_TIMEOUT"),
-			Value:       3 * time.Second,
+			Value:       10 * time.Second,
 			Hidden:      true,
 			Destination: &LocalConfig.System.ReadTimeout,
 		},
