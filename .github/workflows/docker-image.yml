@@ -46,7 +46,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
-          file: Dockerfile
+          file: ./deploy/Dockerfile
           platforms: |
             linux/arm64
             linux/amd64

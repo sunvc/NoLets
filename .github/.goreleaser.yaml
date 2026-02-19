@@ -53,13 +53,13 @@ archives:
     name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
     formats: [ 'tar.gz' ]
     files:
-      - pushback.p8
-      - config.yaml
+      - src: ./deploy/pushback.p8
+        strip_parent: true
+      - src: ./deploy/config.yaml
+        strip_parent: true
       - LICENSE
       - README.md
       - README_EN.md
-      - README_KR.md
-      - README_JP.md
 
 release:
   github:
@@ -71,8 +71,8 @@ release:
     Example Download Links:
      curl -L -H "os:linux-amd" -o nolets.tar.gz https://wzs.app
   extra_files:
-    - glob: ./pushback.p8
-    - glob: ./config.yaml
+    - glob: ./deploy/pushback.p8
+    - glob: ./deploy/config.yaml
 
 checksum:
   name_template: "checksums.txt"
