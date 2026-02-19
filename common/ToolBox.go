@@ -65,6 +65,17 @@ func Admin(ctx *gin.Context) bool {
 	return false
 }
 
+func TraceID(ctx *gin.Context) string {
+	admin, ok := ctx.Get("trace_id")
+	if ok {
+		auth, success := admin.(string)
+		if success {
+			return auth
+		}
+	}
+	return ""
+}
+
 func GetClientHost(c *gin.Context) string {
 	scheme := c.GetHeader("X-Forwarded-Proto")
 	if scheme == "" {

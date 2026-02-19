@@ -35,6 +35,7 @@ var staticFS embed.FS
 func main() {
 	// Create context that listens for the interrupt signal from the OS.
 	ctxOut, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+
 	defer stop()
 
 	common.StaticFS = &staticFS
@@ -67,13 +68,12 @@ func main() {
 
 			if systemConfig.Debug {
 				gin.SetMode(gin.DebugMode)
+				gin.ForceConsoleColor()
 			} else {
 				gin.SetMode(gin.ReleaseMode)
 			}
-			gin.ForceConsoleColor()
 
-			engine := gin.Default()
-			engine.Use(router.Verification())
+			engine := gin.New()
 
 			tmpl := template.Must(template.New("").ParseFS(staticFS, "static/*.html"))
 			engine.SetHTMLTemplate(tmpl)
@@ -96,7 +96,6 @@ func main() {
 						MinVersion:   tls.VersionTLS12,
 					}
 				}
-
 			}
 
 			server := &http.Server{
@@ -131,20 +130,20 @@ func main() {
 			ctxShutdown, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 			// Close HTTP server
-	if err := server.Shutdown(ctxShutdown); err != nil {
-		log.Printf("Server forced to shutdown error: %v", err)
-	}
+			if err := server.Shutdown(ctxShutdown); err != nil {
+				log.Printf("Server forced to shutdown error: %v", err)
+			}
 
-	// Close database connection
-	if err := database.DB.Close(); err != nil {
-		log.Printf("Database close error: %v", err)
-	}
+			// Close database connection
+			if err := database.DB.Close(); err != nil {
+				log.Printf("Database close error: %v", err)
+			}
 
-	// Close APNS client resources
-	push.CloseAPNSClients()
+			// Close APNS client resources
+			push.CloseAPNSClients()
 
-	log.Println("All resources have been properly released")
-	return nil
+			log.Println("All resources have been properly released")
+			return nil
 		},
 	}
 

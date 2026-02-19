@@ -227,6 +227,14 @@ REJP/5bp
 			Destination: &LocalConfig.System.ProxyDownload,
 		},
 		&cli.StringFlag{
+			Name:        "log-path",
+			Usage:       "Log Path",
+			Sources:     cli.EnvVars("NOLET_LOG_PATH"),
+			Aliases:     []string{"lp"},
+			Value:       "./logs/app.log",
+			Destination: &LocalConfig.System.LogPath,
+		},
+		&cli.StringFlag{
 			Name:        "export-path",
 			Usage:       "Export Database",
 			Sources:     cli.EnvVars("NOLET_EXPORT_PATH"),

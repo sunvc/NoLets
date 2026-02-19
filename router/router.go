@@ -6,9 +6,19 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/sunvc/NoLets/common"
 	"github.com/sunvc/NoLets/controller"
+	"github.com/sunvc/NoLets/serverInfo"
 )
 
 func SetupRouter(engine *gin.Engine) {
+
+	logger := serverInfo.InitLogger(common.LocalConfig.System.LogPath)
+
+	engine.Use(
+		GinZapLogger(logger, "/", "/ping", "/health", "/healthz", "/info", "/favicon.ico"),
+		GinRecoveryLogger(logger),
+	)
+	engine.Use(Verification())
+
 	router := engine.Group(common.LocalConfig.System.URLPrefix)
 	router.GET("/", controller.Home)
 	router.POST("/", controller.Home)
@@ -19,6 +29,7 @@ func SetupRouter(engine *gin.Engine) {
 	router.GET("/healthz", controller.Health)
 	router.GET("/info", controller.Info)
 	router.GET("/robots.txt", controller.RobotText)
+
 	wellKnowGroup := router.Group("/.well-known")
 	{
 		wellKnowGroup.GET("/apple-app-site-association", controller.AppleSite)

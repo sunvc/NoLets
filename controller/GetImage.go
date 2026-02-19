@@ -19,7 +19,7 @@ func GetImage(c *gin.Context) {
 		return
 	}
 
-	if strings.HasSuffix(fileName, ".ico") || strings.HasSuffix(fileName, ".png") {
+	if strings.HasSuffix(fileName, "ico") || strings.HasSuffix(fileName, "png") {
 		if strings.HasPrefix(fileName, "og") {
 			fileName = "og.png"
 		} else {

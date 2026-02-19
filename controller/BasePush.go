@@ -21,13 +21,13 @@ func BasePush(c *gin.Context) {
 			deviceKey := result.Keys[0]
 			token, err := database.DB.DeviceTokenByKey(deviceKey)
 			if err != nil {
-				c.JSON(http.StatusOK, common.Failed(http.StatusInternalServerError, "failed to get device token: %v", err))
+				c.JSON(http.StatusOK, common.Failed(c, http.StatusInternalServerError, "failed to get device token: %v", err))
 				return
 			}
-			c.JSON(http.StatusOK, common.Success(token))
+			c.JSON(http.StatusOK, common.Success(c, token))
 			return
 		}
-		c.JSON(http.StatusOK, common.Failed(http.StatusBadRequest, "Incorrect Format"))
+		c.JSON(http.StatusOK, common.Failed(c, http.StatusBadRequest, "Incorrect Format"))
 		return
 	}
 
@@ -58,7 +58,7 @@ func BasePush(c *gin.Context) {
 	}
 
 	if len(result.Tokens) <= 0 {
-		c.JSON(http.StatusOK, common.Failed(http.StatusBadRequest, "Failed to get device token"))
+		c.JSON(http.StatusOK, common.Failed(c, http.StatusBadRequest, "Failed to get device token"))
 		return
 	}
 
@@ -71,7 +71,7 @@ func BasePush(c *gin.Context) {
 	}()
 
 	if err := push.BatchPush(result, pushType); err != nil {
-		c.JSON(http.StatusOK, common.Failed(http.StatusInternalServerError, "push failed: %v", err))
+		c.JSON(http.StatusOK, common.Failed(c, http.StatusInternalServerError, "push failed: %v", err))
 		return
 	}
 
@@ -80,5 +80,5 @@ func BasePush(c *gin.Context) {
 		UpdateNotPushedData(id, result, pushType)
 	}
 
-	c.JSON(http.StatusOK, common.Success())
+	c.JSON(http.StatusOK, common.Success(c))
 }
