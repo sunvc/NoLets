@@ -335,7 +335,7 @@ func (c *collector) collectDisks(ctx context.Context, elapsed time.Duration) []S
 		})
 	}
 
-	return results
+	return aggregateDisks(results)
 }
 
 func (c *collector) collectDocker(ctx context.Context, elapsed time.Duration) []SCContainerResponse {
@@ -827,6 +827,70 @@ func detectRootDevice(parts []disk.PartitionStat) string {
 		}
 	}
 	return ""
+}
+
+// Merge disk entries into a single total view.
+// Bind mounts in containers often point to the same block device and create
+// duplicated rows; aggregate by device first, then return one total item.
+func aggregateDisks(disks []SCDiskResponse) []SCDiskResponse {
+	if len(disks) == 0 {
+		return nil
+	}
+
+	byDevice := make(map[string]SCDiskResponse, len(disks))
+	mountCount := make(map[string]int, len(disks))
+	for _, d := range disks {
+		prev, ok := byDevice[d.Device]
+		if !ok {
+			byDevice[d.Device] = d
+			mountCount[d.Device] = 1
+			continue
+		}
+
+		// Same device mounted at multiple points: keep capacity from the largest
+		// mount and sum throughput counters.
+		if d.TotalBytes > prev.TotalBytes {
+			prev.MountPoint = d.MountPoint
+			prev.FileSystem = d.FileSystem
+			prev.UsedBytes = d.UsedBytes
+			prev.TotalBytes = d.TotalBytes
+		}
+
+		prev.ReadBps += d.ReadBps
+		prev.ReadBytes += d.ReadBytes
+		prev.ReadIOPS += d.ReadIOPS
+		prev.WriteBps += d.WriteBps
+		prev.WriteBytes += d.WriteBytes
+		prev.WriteIOPS += d.WriteIOPS
+
+		// Average latency weighted by IOPS.
+		prev.ReadDelayMs = weightedAvgLatency(prev.ReadDelayMs, prev.ReadIOPS-d.ReadIOPS, d.ReadDelayMs, d.ReadIOPS)
+		prev.WriteDelayMs = weightedAvgLatency(prev.WriteDelayMs, prev.WriteIOPS-d.WriteIOPS, d.WriteDelayMs, d.WriteIOPS)
+
+		byDevice[d.Device] = prev
+		mountCount[d.Device]++
+	}
+
+	out := make([]SCDiskResponse, 0, len(byDevice))
+	for dev, d := range byDevice {
+		if mountCount[dev] > 1 {
+			d.MountPoint = "multiple"
+		}
+		out = append(out, d)
+	}
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].Device < out[j].Device
+	})
+
+	return out
+}
+
+func weightedAvgLatency(aVal, aWeight, bVal, bWeight float64) float64 {
+	totalWeight := aWeight + bWeight
+	if totalWeight <= 0 {
+		return 0
+	}
+	return (aVal*aWeight + bVal*bWeight) / totalWeight
 }
 
 var collectorMain = newCollector()
