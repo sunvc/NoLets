@@ -47,6 +47,7 @@ type DeviceInfo struct {
 	Key   string `json:"key"`
 	Token string `json:"token"`
 	Group string `json:"group,omitempty"`
+	Core  int64  `json:"core,omitempty"`
 }
 
 // DateNow returns the current time in UTC.

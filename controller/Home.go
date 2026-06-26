@@ -41,12 +41,6 @@ func Home(c *gin.Context) {
 		return
 	}
 
-	if id := c.Query("id"); id != "" {
-		NotPushedDataList.Delete(id)
-		c.Status(http.StatusOK)
-		return
-	}
-
 	url := common.GetClientHost(c)
 
 	c.HTML(http.StatusOK, "index.html", gin.H{

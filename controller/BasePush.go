@@ -74,11 +74,6 @@ func BasePush(c *gin.Context) {
 		c.JSON(http.StatusOK, common.Failed(c, http.StatusInternalServerError, "push failed: %v", err))
 		return
 	}
-
-	// If admin, add to not-pushed list
-	if id, ok := result.Get(common.ID).(string); common.Admin(c) && ok && len(id) > 0 {
-		UpdateNotPushedData(id, result, pushType)
-	}
-
+	
 	c.JSON(http.StatusOK, common.Success(c))
 }

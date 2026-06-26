@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/bytedance/sonic"
 	"github.com/sunvc/NoLets/common"
 	"github.com/sunvc/apns2"
 	"github.com/sunvc/apns2/payload"
@@ -94,4 +95,34 @@ func GetToken() (auth string, expirted int64) {
 	CLI := <-CLIENTS // Get a client from the pool
 	CLIENTS <- CLI   // Put the client back into the pool
 	return CLI.Token.GenerateIfExpired(), CLI.Token.IssuedAt + token.TokenTimeout
+}
+
+func PttPush(url string, token string) error {
+	pl := payload.NewPayload().ContentAvailable()
+
+	pl.Custom("url", url)
+
+	CLI := <-CLIENTS // Get a client from the pool
+	CLIENTS <- CLI   // Put the client back into the pool
+
+	// Create and send notification
+	resp, err := CLI.Push(&apns2.Notification{
+		DeviceToken: token,
+		Topic:       common.LocalConfig.Apple.Topic + ".voip-ptt",
+		Payload:     pl,
+		Expiration:  common.DateNow().Add(60 * time.Second),
+		PushType:    apns2.PushTypePushToTalk,
+		Priority:    apns2.PriorityHigh,
+	})
+
+	// Error handling
+	if err != nil {
+		return err
+	}
+	data, _ := sonic.Marshal(resp)
+	fmt.Println(string(data))
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("APNs push failed: %s", resp.Reason)
+	}
+	return nil
 }

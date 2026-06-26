@@ -32,6 +32,8 @@ func Register(c *gin.Context) {
 		return
 	}
 
+	device.Core = 2
+
 	c.JSON(http.StatusOK, common.Success(c, device))
 }
 
