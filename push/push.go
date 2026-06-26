@@ -6,7 +6,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/bytedance/sonic"
 	"github.com/sunvc/NoLets/common"
 	"github.com/sunvc/apns2"
 	"github.com/sunvc/apns2/payload"
@@ -119,8 +118,6 @@ func PttPush(url string, token string) error {
 	if err != nil {
 		return err
 	}
-	data, _ := sonic.Marshal(resp)
-	fmt.Println(string(data))
 	if resp.StatusCode != 200 {
 		return fmt.Errorf("APNs push failed: %s", resp.Reason)
 	}

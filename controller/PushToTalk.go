@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -49,7 +48,7 @@ func PttConnect(c *gin.Context) {
 
 		c.JSON(200, common.Success(c, response))
 	}
-	
+
 }
 
 func PttVoice(c *gin.Context) {
@@ -89,6 +88,7 @@ func PttVoice(c *gin.Context) {
 
 		msg := PushToTalk.VoiceMessage{
 			ID:        uuid.New().String(),
+			Host:      c.Request.Host,
 			Channel:   channel,
 			FileName:  fileName,
 			Sender:    id,
@@ -111,7 +111,7 @@ func PttVoice(c *gin.Context) {
 		}
 
 		path := common.BaseDir("voices", fileName)
-		fmt.Println(path)
+
 		if _, err := os.Stat(path); err != nil {
 			c.AbortWithStatus(404)
 			return

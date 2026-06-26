@@ -29,6 +29,7 @@ func (c *Channel) UserList() []PttUser {
 
 type VoiceMessage struct {
 	ID        string `json:"id"`
+	Host      string `json:"host"`
 	Channel   string `json:"channel"`
 	FileName  string `json:"fileName"`
 	Sender    string `json:"sender"`

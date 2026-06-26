@@ -40,7 +40,7 @@ func startPttConsumer(workerID int) {
 			for _, token := range targets {
 				task := PushTask{
 					Token: token,
-					Url:   "http://192.168.0.4:8080/ptt/voice/" + msg.FileName,
+					Url:   msg.Host + "/ptt/voice/" + msg.FileName,
 				}
 
 				select {
@@ -66,7 +66,6 @@ func startPushTaskWorker(workerID int) {
 
 			// 调用底层的推送方法
 			if err := push.PttPush(task.Url, task.Token); err != nil {
-
 				fmt.Println(fmt.Printf("[PushWorker-%d] 苹果推送失败 (Token: %s): %v\n", workerID, task.Token[:10], err))
 			}
 		}()
