@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -8,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/antlabs/quickws"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/sunvc/NoLets/PushToTalk"
@@ -42,7 +44,7 @@ func PttConnect(c *gin.Context) {
 			response = append(response, PushToTalk.JoinResponse{
 				Channel: channel,
 				Host:    req.Host,
-				Users:   ch.UserList(),
+				Users:   ch.UserListResp(),
 			})
 		}
 
@@ -88,7 +90,7 @@ func PttVoice(c *gin.Context) {
 
 		msg := PushToTalk.VoiceMessage{
 			ID:        uuid.New().String(),
-			Host:      c.Request.Host,
+			Host:      GetAbsoluteHost(c),
 			Channel:   channel,
 			FileName:  fileName,
 			Sender:    id,
@@ -144,4 +146,15 @@ func veryPttTimestamp(timestamp string, ext int) bool {
 	}
 	seconds := time.Now().Sub(time.UnixMilli(ts)).Seconds()
 	return seconds < float64(ext)
+}
+
+func GetAbsoluteHost(c *gin.Context) string {
+	scheme := c.GetHeader("X-Forwarded-Proto")
+	if scheme == "" {
+		scheme = "http"
+		if c.Request.TLS != nil {
+			scheme = "https"
+		}
+	}
+	return scheme + "://" + c.Request.Host
 }

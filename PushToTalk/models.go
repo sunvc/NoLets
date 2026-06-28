@@ -11,7 +11,7 @@ type PttUser struct {
 }
 
 type Channel struct {
-	UserIDs map[string]struct{} `json:"-"`
+	UserIDs map[string]struct{}
 }
 
 func (c *Channel) UserList() []PttUser {
@@ -21,6 +21,25 @@ func (c *Channel) UserList() []PttUser {
 		if val, ok := GlobalUsers.Load(uid); ok {
 			if userPtr, ok := val.(*PttUser); ok && userPtr != nil {
 				userList = append(userList, *userPtr)
+			}
+		}
+	}
+	return userList
+}
+
+func (c *Channel) UserListResp() []PttUserResp {
+	userList := make([]PttUserResp, 0, len(c.UserIDs))
+
+	for uid := range c.UserIDs {
+		if val, ok := GlobalUsers.Load(uid); ok {
+			if userPtr, ok := val.(*PttUser); ok && userPtr != nil {
+				userList = append(userList, PttUserResp{
+					ID:        userPtr.ID,
+					Name:      userPtr.Name,
+					Latitude:  userPtr.Latitude,
+					Longitude: userPtr.Longitude,
+					Timestamp: userPtr.Timestamp,
+				})
 			}
 		}
 	}
@@ -48,7 +67,15 @@ type JoinParams struct {
 }
 
 type JoinResponse struct {
-	Host    string    `json:"host"`
-	Channel string    `json:"channel"`
-	Users   []PttUser `json:"users"`
+	Host    string        `json:"host"`
+	Channel string        `json:"channel"`
+	Users   []PttUserResp `json:"users"`
+}
+
+type PttUserResp struct {
+	ID        string  `json:"id"`
+	Name      string  `json:"name"`
+	Latitude  float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
+	Timestamp int64   `json:"timestamp"`
 }
