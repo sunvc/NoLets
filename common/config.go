@@ -37,8 +37,6 @@ var LocalConfig = &Config{
 		Version:               "",
 		BuildDate:             "",
 		CommitID:              "",
-		ExportPath:            "",
-		ImportPath:            "",
 		ICPInfo:               "",
 		Auths:                 []string{},
 	},

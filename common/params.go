@@ -127,8 +127,6 @@ func (p *ParamsResult) HandlerParamsToMapOrder(c *gin.Context) {
 	if Admin(c) {
 		result.Set(Host, host)
 	}
-	// Compatible with old versions
-	result.Set(Callback, host)
 
 	getDeviceKey := func(value string) {
 		deviceKeys := strings.Split(value, ",")

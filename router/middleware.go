@@ -13,10 +13,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"github.com/sunvc/NoLets/common"
 	"github.com/sunvc/NoLets/controller"
-	"go.uber.org/zap"
 )
 
 func Verification() gin.HandlerFunc {
@@ -143,41 +141,8 @@ func GCMDecryptMiddleware() gin.HandlerFunc {
 	}
 }
 
-// GinZapLogger 替换 Gin 默认日志的中间件
-func GinZapLogger(logger *zap.Logger, skipPaths ...string) gin.HandlerFunc {
-	// 将 slice 转为 map，提高高并发下的查询效率 (O(1))
-	skip := make(map[string]struct{})
-	for _, p := range skipPaths {
-		skip[p] = struct{}{}
-	}
-	return func(c *gin.Context) {
-		start := time.Now()
-		path := c.Request.URL.Path
-
-		traceID, _ := uuid.NewUUID()
-		c.Set("trace_id", traceID.String())
-		c.Next()
-
-		// 核心逻辑：如果在跳过名单中，直接 return，不执行下方的 logger.Info
-		if _, ok := skip[path]; ok {
-			return
-		}
-
-		cost := time.Since(start)
-		logger.Info(path,
-			zap.Int("status", c.Writer.Status()),
-			zap.String("method", c.Request.Method),
-			zap.String("ip", c.ClientIP()),
-			zap.String("user-agent", c.Request.UserAgent()),
-			zap.String("errors", c.Errors.ByType(gin.ErrorTypePrivate).String()),
-			zap.Duration("cost", cost),
-			zap.String("trace_id", traceID.String()),
-		)
-	}
-}
-
-// GinRecoveryLogger 替换 Gin 默认 Recovery 的中间件，用于捕获 Panic
-func GinRecoveryLogger(logger *zap.Logger) gin.HandlerFunc {
+// GinRecovery 替换 Gin 默认 Recovery 的中间件，用于捕获 Panic
+func GinRecovery() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		defer func() {
 			if err := recover(); err != nil {
@@ -199,20 +164,12 @@ func GinRecoveryLogger(logger *zap.Logger) gin.HandlerFunc {
 
 				httpRequest, _ := httputil.DumpRequest(c.Request, false)
 				if brokenPipe {
-					logger.Error(c.Request.URL.Path,
-						zap.Any("error", err),
-						zap.String("request", string(httpRequest)),
-					)
+					log.Println(c.Request.URL.Path, err, string(httpRequest))
 					_ = c.Error(err.(error))
 					c.Abort()
 					return
 				}
-
-				logger.Error("[Recovery from panic]",
-					zap.Any("error", err),
-					zap.String("request", string(httpRequest)),
-					zap.String("stack", string(debug.Stack())),
-				)
+				log.Println("[Recovery from panic]", err, string(httpRequest), string(debug.Stack()))
 				c.AbortWithStatus(http.StatusInternalServerError)
 			}
 		}()

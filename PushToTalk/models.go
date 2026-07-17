@@ -19,8 +19,8 @@ func (c *Channel) UserList() []PttUser {
 
 	for uid := range c.UserIDs {
 		if val, ok := GlobalUsers.Load(uid); ok {
-			if userPtr, ok := val.(*PttUser); ok && userPtr != nil {
-				userList = append(userList, *userPtr)
+			if userPtr, ok := val.(PttUser); ok {
+				userList = append(userList, userPtr)
 			}
 		}
 	}
@@ -32,7 +32,8 @@ func (c *Channel) UserListResp() []PttUserResp {
 
 	for uid := range c.UserIDs {
 		if val, ok := GlobalUsers.Load(uid); ok {
-			if userPtr, ok := val.(*PttUser); ok && userPtr != nil {
+			if userPtr, ok := val.(PttUser); ok {
+
 				userList = append(userList, PttUserResp{
 					ID:        userPtr.ID,
 					Name:      userPtr.Name,

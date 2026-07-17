@@ -44,10 +44,12 @@ func BaseRes(id string, code int, message string, data ...interface{}) BaseResp 
 }
 
 type DeviceInfo struct {
-	Key   string `json:"key"`
-	Token string `json:"token"`
-	Group string `json:"group,omitempty"`
-	Core  int64  `json:"core,omitempty"`
+	Key      string `json:"key"`
+	Token    string `json:"token"`
+	Talk     string `json:"talk,omitempty"`
+	Location string `json:"location,omitempty"`
+	Group    string `json:"group,omitempty"`
+	Core     int64  `json:"core,omitempty"`
 }
 
 // DateNow returns the current time in UTC.

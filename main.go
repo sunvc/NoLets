@@ -34,6 +34,7 @@ var (
 var staticFS embed.FS
 
 func main() {
+
 	// Create context that listens for the interrupt signal from the OS.
 	ctxOut, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 
@@ -137,6 +138,7 @@ func main() {
 			}
 
 			// Close database connection
+			database.ExportData()
 			if err := database.DB.Close(); err != nil {
 				log.Printf("Database close error: %v", err)
 			}

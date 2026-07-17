@@ -2,17 +2,12 @@ package database
 
 import (
 	"errors"
-	"time"
 
 	"github.com/sunvc/NoLets/common"
-	"gorm.io/driver/mysql"
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	"gorm.io/gorm/schema"
 )
 
 var newDB *gorm.DB
-var isSqlite3 = false
 
 type NewSQL struct{}
 
@@ -36,58 +31,59 @@ func (d *NewSQL) CountAll() (int, error) {
 	return int(count), result.Error
 }
 
-func (d *NewSQL) DeviceTokenByKey(key string) (string, error) {
+func (d *NewSQL) DeviceTokenByKey(key string) (*User, error) {
 
 	var user *User
 	if result := newDB.Where("key = ?", key).First(&user); result.Error != nil {
-		return "", result.Error
+		return nil, result.Error
 	}
-	return user.Token, nil
+	return user, nil
 }
 
-func (d *NewSQL) DeviceTokenByGroup(group string) ([]string, error) {
-	var tokens []string
-	result := newDB.Model(&User{}).Where("user_group = ?", group).Pluck("token", &tokens)
-	return tokens, result.Error
+func (d *NewSQL) DeviceTokenByGroup(group string) ([]*User, error) {
+	var users []*User
+	if err := newDB.Where("user_group = ?", group).Find(&users).Error; err != nil {
+		return nil, err
+	}
+	return users, nil
 }
 
-func (d *NewSQL) SaveDeviceTokenByKey(key, token, group string) (string, error) {
-	if key == "" {
+func (d *NewSQL) SaveDeviceTokenByKey(user User) (string, error) {
+
+	if user.Key == "" {
 		// Generate new UUID
-		key = common.UserID()
+		user.Key = common.UserID()
 	}
 
-	var user User
-	result := newDB.Where("key = ?", key).First(&user)
+	var dbUser User
+	result := newDB.Where("key = ?", user.Key).First(&dbUser)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			// User does not exist, create new user
-			user = User{
-				Key:   key,
-				Token: token,
-				Group: group,
-			}
-			if err := newDB.Create(&user).Error; err != nil {
+			dbUser = user
+			if err := newDB.Create(&dbUser).Error; err != nil {
 				return "", err
 			}
-			return key, nil
+			return dbUser.Key, nil
 		}
 		// Other database errors
 		return "", result.Error
 	}
 
-	if len(token) < 64 && group == user.Group {
-		newDB.Unscoped().Delete(&user)
-		return key, nil
+	if len(user.Token) < 64 && user.Group == dbUser.Group {
+		newDB.Unscoped().Delete(&dbUser)
+		return user.Key, nil
 	}
 
 	// User exists, update token
-	user.Token = token
-	if err := newDB.Save(&user).Error; err != nil {
+	dbUser.Token = user.Token
+	dbUser.Talk = user.Talk
+	dbUser.Location = user.Location
+	if err := newDB.Save(&dbUser).Error; err != nil {
 		return "", err
 	}
 
-	return key, nil
+	return dbUser.Key, nil
 }
 
 func (d *NewSQL) Close() error {
@@ -95,11 +91,8 @@ func (d *NewSQL) Close() error {
 	if err != nil {
 		return err
 	}
-	if isSqlite3 {
-		_, err = sqlDB.Exec("PRAGMA wal_checkpoint(TRUNCATE);VACUUM;")
-		_, err = sqlDB.Exec("VACUUM;")
-	}
-
+	_, err = sqlDB.Exec("PRAGMA wal_checkpoint(TRUNCATE);VACUUM;")
+	_, err = sqlDB.Exec("VACUUM;")
 	return sqlDB.Close()
 }
 
@@ -112,66 +105,4 @@ func (d *NewSQL) KeyExists(key string) bool {
 		return false
 	}
 	return true
-}
-
-func NewMysql(dsn string) Database {
-	var err error
-	newDB, err = gorm.Open(mysql.New(mysql.Config{
-		DSN:                       dsn,   // DSN data source name
-		DefaultStringSize:         191,   // Default length for string type fields
-		SkipInitializeWithVersion: false, // Configure automatically based on version
-		DontSupportRenameColumn:   true,
-	}), &gorm.Config{
-		PrepareStmt: true,
-		NamingStrategy: schema.NamingStrategy{
-			SingularTable: true, // Use singular table name
-		},
-	})
-
-	if err != nil {
-		panic("failed to connect database")
-	}
-
-	err = newDB.AutoMigrate(&User{})
-	sqlDB, _ := newDB.DB()
-	// MySQL connection pool
-	sqlDB.SetMaxOpenConns(50)
-	sqlDB.SetMaxIdleConns(10)
-
-	if err != nil {
-		panic("failed to connect database")
-	}
-
-	return &NewSQL{}
-}
-
-func NewSqlite3() Database {
-	var err error
-
-	newDB, err = gorm.Open(sqlite.Open(common.BaseDir(common.APPNAME+".sqlite")), &gorm.Config{
-		PrepareStmt: true,
-		NamingStrategy: schema.NamingStrategy{
-			SingularTable: true, // Use singular table name
-		},
-	})
-
-	if err != nil {
-		panic("failed to connect database")
-	}
-
-	err = newDB.AutoMigrate(&User{})
-
-	if err != nil {
-		panic("failed to connect database")
-	}
-
-	sqlDB, _ := newDB.DB()
-	_, _ = sqlDB.Exec(`PRAGMA journal_mode = WAL;`)
-
-	sqlDB.SetMaxOpenConns(10)
-	sqlDB.SetMaxIdleConns(2)
-	sqlDB.SetConnMaxLifetime(time.Hour)
-
-	return &NewSQL{}
-
 }

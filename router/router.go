@@ -6,17 +6,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/sunvc/NoLets/common"
 	"github.com/sunvc/NoLets/controller"
-	"github.com/sunvc/NoLets/serverInfo"
 )
 
 func SetupRouter(engine *gin.Engine) {
 
-	logger := serverInfo.InitLogger(common.LocalConfig.System.LogPath)
-
-	engine.Use(
-		GinZapLogger(logger, "/", "/ping", "/health", "/healthz", "/info", "/favicon.ico"),
-		GinRecoveryLogger(logger),
-	)
+	engine.Use(GinRecovery(), gin.Logger())
 	engine.Use(Verification())
 
 	router := engine.Group(common.LocalConfig.System.URLPrefix)

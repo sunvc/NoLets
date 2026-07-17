@@ -34,8 +34,8 @@ func BasePush(c *gin.Context) {
 	if len(result.Tokens) <= 0 {
 		for _, key := range result.Keys {
 			if len(key) > 5 {
-				if token, err := database.DB.DeviceTokenByKey(key); err == nil {
-					result.Tokens = append(result.Tokens, token)
+				if user, err := database.DB.DeviceTokenByKey(key); err == nil {
+					result.Tokens = append(result.Tokens, user.Token)
 				}
 
 			}
@@ -46,7 +46,11 @@ func BasePush(c *gin.Context) {
 
 			if name, ok := result.Params.Get(common.PushGroupName); ok {
 				if nameStr, bok := name.(string); bok {
-					tokens, err := database.DB.DeviceTokenByGroup(nameStr)
+					users, err := database.DB.DeviceTokenByGroup(nameStr)
+					var tokens []string
+					for _, user := range users {
+						tokens = append(tokens, user.Token)
+					}
 					tokens = common.Unique(tokens)
 					if err == nil && len(tokens) > 0 {
 						result.Tokens = append(result.Tokens, tokens...)
@@ -74,6 +78,6 @@ func BasePush(c *gin.Context) {
 		c.JSON(http.StatusOK, common.Failed(c, http.StatusInternalServerError, "push failed: %v", err))
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, common.Success(c))
 }

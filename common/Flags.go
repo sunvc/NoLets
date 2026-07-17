@@ -234,23 +234,6 @@ REJP/5bp
 			Value:       "./logs/app.log",
 			Destination: &LocalConfig.System.LogPath,
 		},
-		&cli.StringFlag{
-			Name:        "export-path",
-			Usage:       "Export Database",
-			Sources:     cli.EnvVars("NOLET_EXPORT_PATH"),
-			Aliases:     []string{"dc"},
-			Value:       "",
-			Destination: &LocalConfig.System.ExportPath,
-		},
-		&cli.StringFlag{
-			Name:        "import-path",
-			Usage:       "Export Database",
-			Sources:     cli.EnvVars("NOLET_IMPORT_PATH"),
-			Aliases:     []string{"dr"},
-			Value:       "",
-			Destination: &LocalConfig.System.ImportPath,
-		},
-
 		&cli.BoolFlag{
 			Name:        "chttps",
 			Usage:       "custom https",

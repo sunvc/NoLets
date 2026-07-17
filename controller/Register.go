@@ -21,11 +21,17 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	if len(strings.TrimSpace(device.Token)) > 128 {
+	if len(strings.TrimSpace(device.Token)) > 200 {
 		c.JSON(http.StatusOK, common.Failed(c, http.StatusBadRequest, "Invalid deviceToken"))
 		return
 	}
-	device.Key, err = database.DB.SaveDeviceTokenByKey(device.Key, device.Token, device.Group)
+	device.Key, err = database.DB.SaveDeviceTokenByKey(database.User{
+		Key:      device.Key,
+		Token:    device.Token,
+		Talk:     device.Talk,
+		Location: device.Location,
+		Group:    device.Group,
+	})
 
 	if err != nil {
 		c.JSON(http.StatusOK, common.Failed(c, http.StatusInternalServerError, "device registration failed: %v", err))
@@ -52,7 +58,7 @@ func Restore(c *gin.Context) {
 		return
 	} else {
 		if common.Admin(c) {
-			_, err := database.DB.SaveDeviceTokenByKey(deviceKey, "", "")
+			_, err := database.DB.SaveDeviceTokenByKey(database.User{Key: deviceKey})
 			if err == nil {
 				c.JSON(http.StatusOK, common.Success(c))
 				return

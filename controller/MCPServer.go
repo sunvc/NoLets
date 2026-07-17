@@ -64,9 +64,9 @@ func notifyHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallT
 	}
 
 	for _, deviceKey := range params.Keys {
-		token, err := database.DB.DeviceTokenByKey(deviceKey)
+		user, err := database.DB.DeviceTokenByKey(deviceKey)
 		if err == nil {
-			params.Tokens = append(params.Tokens, token)
+			params.Tokens = append(params.Tokens, user.Token)
 		}
 	}
 	params.PushType = common.ParamsNanAndDefault(params)

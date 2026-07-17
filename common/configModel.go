@@ -41,9 +41,7 @@ type System struct {
 	CommitID              string        `mapstructure:"-" json:"-" yaml:"-" koanf:"-"`
 	CustomHttps           bool          `mapstructure:"-" json:"-" yaml:"-" koanf:"-"`
 	ProxyDownload         bool          `mapstructure:"proxyDownload" json:"proxyDownload" yaml:"proxyDownload" koanf:"proxyDownload"`
-	ExportPath            string        `mapstructure:"exportPath" json:"exportPath" yaml:"exportPath" koanf:"exportPath"`
 	LogPath               string        `mapstructure:"logPath" json:"logPath" yaml:"logPath" koanf:"logPath"`
-	ImportPath            string        `mapstructure:"importPath" json:"importPath" yaml:"importPath" koanf:"importPath"`
 	ICPInfo               string        `mapstructure:"icp_info" json:"icp_info" yaml:"icp_info" koanf:"icp_info"`
 	TimeZone              string        `mapstructure:"time_zone" json:"time_zone" yaml:"time_zone" koanf:"time_zone"`
 	Auths                 []string      `mapstructure:"auths" json:"auths" yaml:"auths" koanf:"auths"`
