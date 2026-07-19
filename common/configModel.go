@@ -27,6 +27,7 @@ type System struct {
 	Cert                  string        `mapstructure:"cert" json:"cert" yaml:"cert" koanf:"cert"`
 	Key                   string        `mapstructure:"key" json:"key" yaml:"key" koanf:"key"`
 	ReduceMemoryUsage     bool          `mapstructure:"reduce_memory_usage" json:"reduce_memory_usage" yaml:"reduce_memory_usage" koanf:"reduce_memory_usage"`
+	Voice                 bool          `mapstructure:"voice" json:"voice" yaml:"voice" koanf:"voice"`
 	ProxyHeader           string        `mapstructure:"proxy_header" json:"proxy_header" yaml:"proxy_header" koanf:"proxy_header"`
 	MaxBatchPushCount     int           `mapstructure:"max_batch_push_count" json:"max_batch_push_count" yaml:"max_batch_push_count" koanf:"max_batch_push_count"`
 	MaxAPNSClientCount    int           `mapstructure:"max_apns_client_count" json:"max_apns_client_count" yaml:"max_apns_client_count" koanf:"max_apns_client_count"`
@@ -103,6 +104,7 @@ func (global *Config) SetConfig(configPath string) {
 	}
 
 	global.System.ReduceMemoryUsage = conf.System.ReduceMemoryUsage
+	global.System.Voice = conf.System.Voice
 	if len(conf.System.ProxyHeader) > 0 {
 		global.System.ProxyHeader = conf.System.ProxyHeader
 	}

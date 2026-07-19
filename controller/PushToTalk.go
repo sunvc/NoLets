@@ -10,36 +10,36 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/sunvc/NoLets/PushToTalk"
 	"github.com/sunvc/NoLets/common"
+	PushToTalk2 "github.com/sunvc/NoLets/controller/PushToTalk"
 )
 
 // PushTask 代表发往单个用户的推送任务（第二级队列使用）
 
 func PttConnect(c *gin.Context) {
 
-	var req PushToTalk.JoinParams
+	var req PushToTalk2.JoinParams
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(200, common.Failed(c, -1, err.Error()))
+		c.JSON(200, common.Failed(c, -1, err.Error(), nil))
 		return
 	}
 
 	if req.Token == "" {
-		PushToTalk.SyncChannels(req.PttUser, []string{})
-		c.JSON(200, common.Success(c, []PushToTalk.JoinResponse{}))
+		PushToTalk2.SyncChannels(req.PttUser, []string{})
+		c.JSON(200, common.Success(c, []PushToTalk2.JoinResponse{}))
 
 	} else {
-		var response []PushToTalk.JoinResponse
+		var response []PushToTalk2.JoinResponse
 
-		PushToTalk.SyncChannels(req.PttUser, req.Channels)
+		PushToTalk2.SyncChannels(req.PttUser, req.Channels)
 
 		for _, channel := range req.Channels {
-			ch, ok := PushToTalk.Channels[channel]
+			ch, ok := PushToTalk2.Channels[channel]
 			if !ok {
 				continue
 			}
-			response = append(response, PushToTalk.JoinResponse{
+			response = append(response, PushToTalk2.JoinResponse{
 				Channel: channel,
 				Host:    req.Host,
 				Users:   ch.UserListResp(),
@@ -58,14 +58,14 @@ func PttVoice(c *gin.Context) {
 		fileName := c.GetHeader("X-PFA")
 
 		if fileName == "" {
-			c.JSON(200, common.Failed(c, -1, "upload file error"))
+			c.JSON(200, common.Failed(c, -1, "upload file error", nil))
 			return
 		}
 
 		id, channel, timestamp := getUserData(fileName)
 
 		if !veryPttTimestamp(timestamp, 60) {
-			c.JSON(200, common.Failed(c, -1, "Error Data!"))
+			c.JSON(200, common.Failed(c, -1, "Error DATA!", nil))
 			return
 		}
 
@@ -75,18 +75,18 @@ func PttVoice(c *gin.Context) {
 		defer func() { _ = file.Close() }()
 
 		if err != nil {
-			c.JSON(200, common.Failed(c, -1, err.Error()))
+			c.JSON(200, common.Failed(c, -1, err.Error(), nil))
 			return
 		}
 
 		_, err = io.Copy(file, c.Request.Body)
 
 		if err != nil {
-			c.JSON(200, common.Failed(c, -1, err.Error()))
+			c.JSON(200, common.Failed(c, -1, err.Error(), nil))
 			return
 		}
 
-		msg := PushToTalk.VoiceMessage{
+		msg := PushToTalk2.VoiceMessage{
 			ID:        uuid.New().String(),
 			Host:      GetAbsoluteHost(c),
 			Channel:   channel,
@@ -96,7 +96,7 @@ func PttVoice(c *gin.Context) {
 			CreatedAt: time.Now().UnixMilli(),
 		}
 
-		PushToTalk.MsgQueue <- msg
+		PushToTalk2.MsgQueue <- msg
 
 		c.JSON(200, common.Success(c, 0))
 		return
@@ -122,7 +122,7 @@ func PttVoice(c *gin.Context) {
 		return
 	}
 
-	c.JSON(200, common.Failed(c, -1, "Error Method"))
+	c.JSON(200, common.Failed(c, -1, "Error Method", nil))
 
 }
 

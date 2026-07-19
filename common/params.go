@@ -3,6 +3,7 @@ package common
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -14,7 +15,7 @@ import (
 // It uses an ordered map to store parameters, ensuring the processing order of parameters.
 type ParamsResult struct {
 	Params   *orderedmap.OrderedMap[string, interface{}]
-	Tokens   []string
+	Users    []User
 	Keys     []string
 	PushType int
 }
@@ -72,20 +73,20 @@ func NewParamsResult(c *gin.Context) *ParamsResult {
 	main := &ParamsResult{
 		Params: orderedmap.New[string, interface{}](),
 		Keys:   []string{},
-		Tokens: []string{},
+		Users:  make([]User, 0),
 	}
 	main.HandlerParamsToMapOrder(c)
 	main.PushType = ParamsNanAndDefault(main)
 
 	var resultKeys []string
 
-	if keys, ok := main.Params.Get(DeviceKeys); ok {
+	if keys, ok := main.Params.Get(DEVICEKEYS); ok {
 		if vals, oka := keys.([]interface{}); oka {
 			resultKeys = InterfaceSliceToStringSlice(vals)
 		}
 	}
 
-	if key, ok := main.Params.Get(DeviceKey); ok {
+	if key, ok := main.Params.Get(DEVICEKEY); ok {
 		if val, oka := key.(string); oka {
 			resultKeys = append(resultKeys, strings.Split(val, ",")...)
 		}
@@ -98,17 +99,15 @@ func NewParamsResult(c *gin.Context) *ParamsResult {
 		main.Keys = main.Keys[:LocalConfig.System.MaxDeviceKeyArrLength]
 	}
 
-	var tokens []string
-	if token, ok := main.Params.Get(DeviceToken); ok {
+	var users []User
+	if token, ok := main.Params.Get(DEVICETOKEN); ok {
 		if val, oka := token.(string); oka && len(val) > 10 {
-			tokens = append(tokens, val)
+			users = append(users, User{Token: val})
 		}
 	}
 
-	tokens = FilterShortStrings(tokens, 60, 65)
-
-	main.Tokens = tokens
-
+	users = UserUnique(users)
+	main.Users = users
 	return main
 }
 
@@ -125,15 +124,15 @@ func (p *ParamsResult) HandlerParamsToMapOrder(c *gin.Context) {
 	// Check if it is an admin
 	host := GetClientHost(c)
 	if Admin(c) {
-		result.Set(Host, host)
+		result.Set(HOST, host)
 	}
 
 	getDeviceKey := func(value string) {
 		deviceKeys := strings.Split(value, ",")
 		if len(deviceKeys) > 1 {
-			result.Set(DeviceKeys, deviceKeys)
+			result.Set(DEVICEKEYS, deviceKeys)
 		} else {
-			result.Set(DeviceKey, value)
+			result.Set(DEVICEKEY, value)
 		}
 	}
 
@@ -142,16 +141,16 @@ func (p *ParamsResult) HandlerParamsToMapOrder(c *gin.Context) {
 		getDeviceKey(c.Params[0].Value)
 	case 2:
 		getDeviceKey(c.Params[0].Value)
-		result.Set(Body, c.Params[1].Value)
+		result.Set(BODY, c.Params[1].Value)
 	case 3:
 		getDeviceKey(c.Params[0].Value)
-		result.Set(Title, c.Params[1].Value)
-		result.Set(Body, c.Params[2].Value)
+		result.Set(TITLE, c.Params[1].Value)
+		result.Set(BODY, c.Params[2].Value)
 	case 4:
 		getDeviceKey(c.Params[0].Value)
-		result.Set(Title, c.Params[1].Value)
-		result.Set(Subtitle, c.Params[2].Value)
-		result.Set(Body, c.Params[3].Value)
+		result.Set(TITLE, c.Params[1].Value)
+		result.Set(SUBTITLE, c.Params[2].Value)
+		result.Set(BODY, c.Params[3].Value)
 	}
 
 	// parse query args (medium priority)
@@ -161,7 +160,7 @@ func (p *ParamsResult) HandlerParamsToMapOrder(c *gin.Context) {
 		for key, values := range params {
 			lowKey := p.NormalizeKey(key)
 			if len(values) > 0 {
-				if lowKey == DeviceKey {
+				if lowKey == DEVICEKEY {
 					keys = append(keys, values...)
 				} else {
 					result.Set(lowKey, values[0])
@@ -172,18 +171,18 @@ func (p *ParamsResult) HandlerParamsToMapOrder(c *gin.Context) {
 
 		if keysNum := len(keys); keysNum > 0 {
 			if keysNum == 1 {
-				result.Set(DeviceKey, keys[0])
+				result.Set(DEVICEKEY, keys[0])
 			} else {
-				result.Set(DeviceKeys, keys)
+				result.Set(DEVICEKEYS, keys)
 			}
 		}
 	}
 
-	// POST Body
+	// POST BODY
 	if c.Request.Method == http.MethodPost {
 
-		contentType := c.Request.Header.Get(HeaderContentType)
-		if strings.HasPrefix(contentType, MIMEApplicationJSON) {
+		contentType := c.Request.Header.Get(HEADERCONTENTTYPE)
+		if strings.HasPrefix(contentType, MIMEAPPLICATIONJSON) {
 			var jsonData map[string]interface{}
 			err := c.ShouldBindBodyWithJSON(&jsonData)
 			if err == nil {
@@ -211,49 +210,49 @@ func (p *ParamsResult) HandlerParamsToMapOrder(c *gin.Context) {
 
 func ConvenientParamsHandler(result *orderedmap.OrderedMap[string, interface{}]) {
 	// Try to convert from other fields first
-	if data, dataOk := result.Get(Data); dataOk {
-		result.Set(Body, fmt.Sprint(data))
-		result.Delete(Data)
-	} else if content, contentOk := result.Get(Content); contentOk {
-		result.Set(Body, fmt.Sprint(content))
-		result.Delete(Content)
-	} else if message, messageOk := result.Get(Message); messageOk {
-		result.Set(Body, fmt.Sprint(message))
-		result.Delete(Message)
-	} else if text, textOk := result.Get(Text); textOk {
-		result.Set(Body, fmt.Sprint(text))
-		result.Delete(Text)
+	if data, dataOk := result.Get(DATA); dataOk {
+		result.Set(BODY, fmt.Sprint(data))
+		result.Delete(DATA)
+	} else if content, contentOk := result.Get(CONTENT); contentOk {
+		result.Set(BODY, fmt.Sprint(content))
+		result.Delete(CONTENT)
+	} else if message, messageOk := result.Get(MESSAGE); messageOk {
+		result.Set(BODY, fmt.Sprint(message))
+		result.Delete(MESSAGE)
+	} else if text, textOk := result.Get(TEXT); textOk {
+		result.Set(BODY, fmt.Sprint(text))
+		result.Delete(TEXT)
 	}
 
 	// Process markdown fields
 	// If markdown field exists, convert it to body and set category to markdown
-	if v, ok := result.Get(Markdown); ok {
-		result.Set(Body, fmt.Sprint(v))
-		result.Set(Category, CategoryMarkdown)
-		result.Delete(Markdown)
+	if v, ok := result.Get(MARKDOWN); ok {
+		result.Set(BODY, fmt.Sprint(v))
+		result.Set(CATEGORY, CATEGORYMARKDOWN)
+		result.Delete(MARKDOWN)
 
 	}
 	// If md field exists, convert it to body and set category to markdown
 	if v, ok := result.Get(MD); ok {
-		result.Set(Body, fmt.Sprint(v))
-		result.Set(Category, CategoryMarkdown)
+		result.Set(BODY, fmt.Sprint(v))
+		result.Set(CATEGORY, CATEGORYMARKDOWN)
 		result.Delete(MD)
 	}
 
 	// Normalize category field
 	// If category is not default or markdown, set it to default
-	if v, ok := result.Get(Category); ok {
-		if v != CategoryDefault && v != CategoryMarkdown {
-			result.Set(Category, CategoryDefault)
+	if v, ok := result.Get(CATEGORY); ok {
+		if v != CATEGORYDEFAULT && v != CATEGORYMARKDOWN {
+			result.Set(CATEGORY, CATEGORYDEFAULT)
 		}
 	}
 
 	// Process sound file suffix
 	// If the sound file does not have a .caf suffix, add it
-	if val, ok := result.Get(Sound); ok {
+	if val, ok := result.Get(SOUND); ok {
 		if sound, oka := val.(string); oka {
 			if !strings.HasSuffix(sound, ".caf") {
-				result.Set(Sound, fmt.Sprintf("%v.caf", sound))
+				result.Set(SOUND, fmt.Sprintf("%v.caf", sound))
 			}
 		}
 	}
@@ -268,17 +267,33 @@ func ParamsNanAndDefault(paramsResult *ParamsResult) (resultType int) {
 		return len(strings.TrimSpace(fmt.Sprint(v))) == 0
 	}
 
-	titleNan := get(Title)
-	subTitleNan := get(Subtitle)
-	bodyNan := get(Body)
-	cipherNan := get(CipherText)
-	imageNan := get(Image)
+	titleNan := get(TITLE)
+	subTitleNan := get(SUBTITLE)
+	bodyNan := get(BODY)
+	cipherNan := get(CIPHERTEXT)
+	imageNan := get(IMAGE)
 	idNan := get(ID)
+
+	location := func() bool {
+		v, ok := paramsResult.Params.Get(LOCATION)
+		if !ok {
+			return false
+		}
+
+		u, err := url.Parse(fmt.Sprint(v))
+		if err != nil {
+			return false
+		}
+
+		return u.Scheme != "" && u.Host != ""
+	}()
 
 	contentNan := titleNan && subTitleNan && bodyNan && cipherNan && imageNan
 
 	// ---- resultType logic ----
 	switch {
+	case location:
+		resultType = 2
 	case contentNan && !idNan:
 		resultType = 0
 	case !contentNan:
@@ -290,7 +305,7 @@ func ParamsNanAndDefault(paramsResult *ParamsResult) (resultType int) {
 
 	// ---- Logic to supplement body: "-" ----
 	if (!cipherNan || !imageNan) && titleNan && subTitleNan && bodyNan {
-		paramsResult.Params.Set(Body, "-")
+		paramsResult.Params.Set(BODY, "-")
 	}
 
 	// ---- Default value processing ----
@@ -301,9 +316,9 @@ func ParamsNanAndDefault(paramsResult *ParamsResult) (resultType int) {
 		}
 	}
 
-	setDefault(AutoCopy, AutoCopyDefault)
-	setDefault(Level, LevelDefault)
-	setDefault(Category, CategoryDefault)
+	setDefault(AUTOCOPY, AUTOCOPYDEFAULT)
+	setDefault(LEVEL, LEVELDEFAULT)
+	setDefault(CATEGORY, CATEGORYDEFAULT)
 	setDefault(ID, func() interface{} {
 		messageID, _ := uuid.NewUUID()
 		return messageID.String()

@@ -12,6 +12,55 @@ import (
 	"github.com/sunvc/apns2/token"
 )
 
+func LocationPush(params *common.ParamsResult) map[string]string {
+	pl := payload.NewPayload()
+	// Add custom parameters
+	for pair := params.Params.Oldest(); pair != nil; pair = pair.Next() {
+		pl.Custom(pair.Key, pair.Value)
+	}
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	var errs = make(map[string]string)
+	for _, user := range params.Users {
+		fmt.Println("user:", user)
+		wg.Go(func() {
+			if len(user.Location) == 0 {
+				mu.Lock()
+				errs[user.Key] = "no token specified"
+				mu.Unlock()
+				return
+			}
+			CLI := <-CLIENTS // Get a client from the pool
+			CLIENTS <- CLI   // Put the client back into the pool
+
+			// Create and send notification
+			resp, err := CLI.Push(&apns2.Notification{
+				DeviceToken: user.Location,
+				CollapseID:  params.GetString(common.ID),
+				Topic:       common.LocalConfig.Apple.Topic + ".location-query",
+				Payload:     pl,
+				Expiration:  common.DateNow().Add(10 * time.Minute),
+				PushType:    apns2.PushTypeLocation,
+			})
+
+			// Error handling
+			if err != nil {
+				mu.Lock()
+				errs[user.Key] = err.Error()
+				mu.Unlock()
+			} else if resp.StatusCode != 200 {
+				mu.Lock()
+				errs[user.Key] = fmt.Sprintf("APNs push failed: %s", resp.Reason)
+				mu.Unlock()
+			}
+		})
+	}
+
+	wg.Wait()
+
+	return errs
+}
+
 // Push message to APNs server
 func Push(params *common.ParamsResult, pushType apns2.EPushType, token string) error {
 	pl := payload.NewPayload().MutableContent()
@@ -20,13 +69,13 @@ func Push(params *common.ParamsResult, pushType apns2.EPushType, token string) e
 		pl = pl.ContentAvailable()
 	} else {
 
-		pl = pl.AlertTitle(params.GetString(common.Title)).
-			AlertSubtitle(params.GetString(common.Subtitle)).
-			AlertBody(params.GetString(common.Body)).
-			Sound(params.GetString(common.Sound)).
+		pl = pl.AlertTitle(params.GetString(common.TITLE)).
+			AlertSubtitle(params.GetString(common.SUBTITLE)).
+			AlertBody(params.GetString(common.BODY)).
+			Sound(params.GetString(common.SOUND)).
 			TargetContentID(params.GetString(common.ID)).
-			ThreadID(params.GetString(common.Group)).
-			Category(params.GetString(common.Category))
+			ThreadID(params.GetString(common.GROUP)).
+			Category(params.GetString(common.CATEGORY))
 	}
 
 	// Add custom parameters
@@ -61,21 +110,21 @@ func Push(params *common.ParamsResult, pushType apns2.EPushType, token string) e
 
 }
 
-func BatchPush(params *common.ParamsResult, pushType apns2.EPushType) error {
+func BatchPush(params *common.ParamsResult, pushType apns2.EPushType) map[string]string {
 
+	errors := make(map[string]string, 0)
 	var (
-		errors []error
-		mu     sync.Mutex
-		wg     sync.WaitGroup
+		mu sync.Mutex
+		wg sync.WaitGroup
 	)
 
-	for _, tokenStr := range params.Tokens {
+	for _, user := range params.Users {
 		/// 1.25 版本新语法
 		wg.Go(func() {
-			if err := Push(params, pushType, tokenStr); err != nil {
+			if err := Push(params, pushType, user.Token); err != nil {
 				log.Println(err.Error())
 				mu.Lock()
-				errors = append(errors, err)
+				errors[user.Key] = err.Error()
 				mu.Unlock()
 			}
 		})
@@ -83,11 +132,7 @@ func BatchPush(params *common.ParamsResult, pushType apns2.EPushType) error {
 
 	wg.Wait()
 
-	if len(errors) > 0 {
-		return fmt.Errorf("APNs push failed: %v", errors)
-	}
-
-	return nil
+	return errors
 }
 
 func GetToken() (auth string, expirted int64) {
@@ -96,10 +141,11 @@ func GetToken() (auth string, expirted int64) {
 	return CLI.Token.GenerateIfExpired(), CLI.Token.IssuedAt + token.TokenTimeout
 }
 
-func PttPush(url string, token string) error {
+func PttPush(url string, name string, token string) error {
 	pl := payload.NewPayload().ContentAvailable()
 
 	pl.Custom("url", url)
+	pl.Custom("name", name)
 
 	CLI := <-CLIENTS // Get a client from the pool
 	CLIENTS <- CLI   // Put the client back into the pool

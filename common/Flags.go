@@ -57,6 +57,13 @@ func Flags() []cli.Flag {
 			Value:       false,
 			Destination: &LocalConfig.System.ReduceMemoryUsage,
 		},
+		&cli.BoolFlag{
+			Name:        "voice",
+			Usage:       "Enable PushToTalk voice routes",
+			Sources:     cli.EnvVars("NOLET_SERVER_VOICE"),
+			Value:       false,
+			Destination: &LocalConfig.System.Voice,
+		},
 		&cli.StringFlag{
 			Name:        "user",
 			Usage:       "Basic auth username",
@@ -231,7 +238,7 @@ REJP/5bp
 			Usage:       "Log Path",
 			Sources:     cli.EnvVars("NOLET_LOG_PATH"),
 			Aliases:     []string{"lp"},
-			Value:       "./logs/app.log",
+			Value:       "./data/logs/app.log",
 			Destination: &LocalConfig.System.LogPath,
 		},
 		&cli.BoolFlag{

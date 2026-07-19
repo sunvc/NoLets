@@ -35,15 +35,15 @@ func Verification() gin.HandlerFunc {
 			user, pass, hasAuth := c.Request.BasicAuth()
 			if !hasAuth {
 				// If no Basic Auth, try to get from query parameters
-				user = c.Query(common.UserName)
-				pass = c.Query(common.Password)
+				user = c.Query(common.USERNAME)
+				pass = c.Query(common.PASSWORD)
 
 				if c.Request.Method == http.MethodPost {
 					if user == "" {
-						user = c.PostForm(common.UserName)
+						user = c.PostForm(common.USERNAME)
 					}
 					if pass == "" {
-						pass = c.PostForm(common.Password)
+						pass = c.PostForm(common.PASSWORD)
 					}
 				}
 			}
@@ -79,9 +79,9 @@ func GCMDecryptMiddleware() gin.HandlerFunc {
 
 		c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 512)
 
-		userAgent := c.GetHeader(common.HeaderUserAgent)
+		userAgent := c.GetHeader(common.HEADERUSERAGENT)
 		if !strings.HasPrefix(strings.ToLower(userAgent), strings.ToLower(common.APPNAME)) {
-			c.AbortWithStatusJSON(http.StatusOK, common.Failed(c, http.StatusUnauthorized, "SB"))
+			c.AbortWithStatusJSON(http.StatusOK, common.Failed(c, http.StatusUnauthorized, "SB", nil))
 			return
 		}
 
@@ -99,7 +99,9 @@ func GCMDecryptMiddleware() gin.HandlerFunc {
 				c,
 				http.StatusUnauthorized,
 				"missing signature",
+				nil,
 			))
+
 			log.Println("missing signature")
 			return
 		}
@@ -111,6 +113,7 @@ func GCMDecryptMiddleware() gin.HandlerFunc {
 				c,
 				http.StatusUnauthorized,
 				"missing signature",
+				err,
 			))
 			log.Println("Signature failed！err1:", err)
 			return
@@ -123,6 +126,7 @@ func GCMDecryptMiddleware() gin.HandlerFunc {
 				c,
 				http.StatusUnauthorized,
 				"missing signature",
+				err,
 			))
 			log.Println("Signature failed！err2:", err)
 			return
@@ -134,6 +138,7 @@ func GCMDecryptMiddleware() gin.HandlerFunc {
 				c,
 				http.StatusUnauthorized,
 				"missing signature",
+				nil,
 			))
 			log.Println("Signature failed！timestamp:", timestampStr)
 			return

@@ -11,15 +11,15 @@ var newDB *gorm.DB
 
 type NewSQL struct{}
 
-func (d *NewSQL) ExportOrImport(dataArr ...User) ([]User, error) {
+func (d *NewSQL) ExportOrImport(dataArr ...common.User) ([]common.User, error) {
 	if len(dataArr) > 0 {
 		if err := newDB.Save(&dataArr).Error; err != nil {
-			return []User{}, err
+			return []common.User{}, err
 		}
-		return []User{}, nil
+		return []common.User{}, nil
 	} else {
-		var users []User
-		err := newDB.Model(&User{}).Find(&users).Error
+		var users []common.User
+		err := newDB.Model(&common.User{}).Find(&users).Error
 		return users, err
 	}
 
@@ -27,35 +27,35 @@ func (d *NewSQL) ExportOrImport(dataArr ...User) ([]User, error) {
 
 func (d *NewSQL) CountAll() (int, error) {
 	var count int64
-	result := newDB.Model(&User{}).Count(&count)
+	result := newDB.Model(&common.User{}).Count(&count)
 	return int(count), result.Error
 }
 
-func (d *NewSQL) DeviceTokenByKey(key string) (*User, error) {
+func (d *NewSQL) DeviceTokenByKey(key string) (*common.User, error) {
 
-	var user *User
+	var user *common.User
 	if result := newDB.Where("key = ?", key).First(&user); result.Error != nil {
 		return nil, result.Error
 	}
 	return user, nil
 }
 
-func (d *NewSQL) DeviceTokenByGroup(group string) ([]*User, error) {
-	var users []*User
+func (d *NewSQL) DeviceTokenByGroup(group string) ([]*common.User, error) {
+	var users []*common.User
 	if err := newDB.Where("user_group = ?", group).Find(&users).Error; err != nil {
 		return nil, err
 	}
 	return users, nil
 }
 
-func (d *NewSQL) SaveDeviceTokenByKey(user User) (string, error) {
+func (d *NewSQL) SaveDeviceTokenByKey(user common.User) (string, error) {
 
 	if user.Key == "" {
 		// Generate new UUID
 		user.Key = common.UserID()
 	}
 
-	var dbUser User
+	var dbUser common.User
 	result := newDB.Where("key = ?", user.Key).First(&dbUser)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
@@ -97,7 +97,7 @@ func (d *NewSQL) Close() error {
 }
 
 func (d *NewSQL) KeyExists(key string) bool {
-	var user User
+	var user common.User
 	// Only query primary key to improve efficiency
 	err := newDB.Select("id").Where("key = ?", key).First(&user).Error
 	if err != nil {

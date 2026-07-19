@@ -15,9 +15,9 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/sunvc/NoLets/PushToTalk"
 	"github.com/sunvc/NoLets/common"
 	"github.com/sunvc/NoLets/controller"
+	"github.com/sunvc/NoLets/controller/PushToTalk"
 	"github.com/sunvc/NoLets/database"
 	"github.com/sunvc/NoLets/push"
 	"github.com/sunvc/NoLets/router"
@@ -81,7 +81,9 @@ func main() {
 			engine.SetHTMLTemplate(tmpl)
 
 			push.CreateAPNSClient(systemConfig.MaxAPNSClientCount)
-			PushToTalk.InitPttSystem()
+			if systemConfig.Voice {
+				PushToTalk.InitPttSystem()
+			}
 
 			router.SetupRouter(engine)
 

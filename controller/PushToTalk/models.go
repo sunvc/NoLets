@@ -59,6 +59,7 @@ type VoiceMessage struct {
 
 type PushTask struct {
 	Token string
+	Name  string
 	Url   string
 }
 

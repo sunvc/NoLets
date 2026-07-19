@@ -10,7 +10,7 @@ import (
 )
 
 // Register handles device registration requests.
-// It allows clients to upload a DeviceToken and bind it to a specific DeviceKey.
+// It allows clients to upload a DEVICETOKEN and bind it to a specific DEVICEKEY.
 // If the Key does not exist, a new one will be generated.
 func Register(c *gin.Context) {
 	var err error
@@ -22,10 +22,10 @@ func Register(c *gin.Context) {
 	}
 
 	if len(strings.TrimSpace(device.Token)) > 200 {
-		c.JSON(http.StatusOK, common.Failed(c, http.StatusBadRequest, "Invalid deviceToken"))
+		c.JSON(http.StatusOK, common.Failed(c, http.StatusBadRequest, "Invalid deviceToken", nil))
 		return
 	}
-	device.Key, err = database.DB.SaveDeviceTokenByKey(database.User{
+	device.Key, err = database.DB.SaveDeviceTokenByKey(common.User{
 		Key:      device.Key,
 		Token:    device.Token,
 		Talk:     device.Talk,
@@ -38,7 +38,9 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	device.Core = 2
+	if common.LocalConfig.System.Voice {
+		device.Core = 2
+	}
 
 	c.JSON(http.StatusOK, common.Success(c, device))
 }
@@ -49,22 +51,22 @@ func Restore(c *gin.Context) {
 	deviceKey := c.Param("deviceKey")
 
 	if deviceKey == "" {
-		c.JSON(http.StatusOK, common.Failed(c, http.StatusBadRequest, "device key is empty"))
+		c.JSON(http.StatusOK, common.Failed(c, http.StatusBadRequest, "device key is empty", nil))
 		return
 	}
 
 	if database.DB.KeyExists(deviceKey) {
-		c.JSON(http.StatusOK, common.Success(c))
+		c.JSON(http.StatusOK, common.Success(c, nil))
 		return
 	} else {
 		if common.Admin(c) {
-			_, err := database.DB.SaveDeviceTokenByKey(database.User{Key: deviceKey})
+			_, err := database.DB.SaveDeviceTokenByKey(common.User{Key: deviceKey})
 			if err == nil {
-				c.JSON(http.StatusOK, common.Success(c))
+				c.JSON(http.StatusOK, common.Success(c, nil))
 				return
 			}
 		}
-		c.JSON(http.StatusOK, common.Failed(c, http.StatusBadRequest, "device key is not exist"))
+		c.JSON(http.StatusOK, common.Failed(c, http.StatusBadRequest, "device key is not exist", nil))
 	}
 
 }

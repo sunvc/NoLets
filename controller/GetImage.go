@@ -15,7 +15,7 @@ func GetImage(c *gin.Context) {
 	color := c.Query("color")
 
 	if fileName == "logo.svg" {
-		c.Data(http.StatusOK, common.MIMEImageSvg, []byte(common.LogoSvgImage(color, true)))
+		c.Data(http.StatusOK, common.MIMEIMAGESVG, []byte(common.LogoSvgImage(color, true)))
 		return
 	}
 
@@ -35,5 +35,5 @@ func GetImage(c *gin.Context) {
 		return
 	}
 
-	c.Data(http.StatusOK, common.MIMEImagePng, data)
+	c.Data(http.StatusOK, common.MIMEIMAGEPNG, data)
 }

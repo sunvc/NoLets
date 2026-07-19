@@ -25,10 +25,11 @@ func startPttConsumer(workerID int) {
 			users := Channels[msg.Channel].UserList()
 
 			// 极速拷贝目标用户列表，排除发送者本人，并迅速释放锁
-			targets := make([]string, 0, len(users))
+			targets := make([]PttUser, 0, len(users))
 			for _, user := range users {
 				if user.ID != msg.Sender && user.Token != "" {
-					targets = append(targets, user.Token)
+
+					targets = append(targets, user)
 				}
 			}
 
@@ -39,7 +40,8 @@ func startPttConsumer(workerID int) {
 			// 拆解成独立的原子任务，塞入第二级队列
 			for _, token := range targets {
 				task := PushTask{
-					Token: token,
+					Name:  token.Name,
+					Token: token.Token,
 					Url:   msg.Host + "/ptt/voice/" + msg.FileName,
 				}
 
@@ -65,7 +67,7 @@ func startPushTaskWorker(workerID int) {
 			}()
 
 			// 调用底层的推送方法
-			if err := push.PttPush(task.Url, task.Token); err != nil {
+			if err := push.PttPush(task.Url, task.Name, task.Token); err != nil {
 				fmt.Println(fmt.Printf("[PushWorker-%d] 苹果推送失败 (Token: %s): %v\n", workerID, task.Token[:10], err))
 			}
 		}()

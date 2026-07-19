@@ -22,22 +22,13 @@ const (
 
 // Database defines all the db operation
 type Database interface {
-	CountAll() (int, error)                     //Get db records count
-	DeviceTokenByKey(key string) (*User, error) //Get specified device's token
-	DeviceTokenByGroup(name string) ([]*User, error)
-	SaveDeviceTokenByKey(user User) (string, error) //Create or update specified device's token
-	ExportOrImport(users ...User) ([]User, error)
+	CountAll() (int, error)                            //Get db records count
+	DeviceTokenByKey(key string) (*common.User, error) //Get specified device's token
+	DeviceTokenByGroup(name string) ([]*common.User, error)
+	SaveDeviceTokenByKey(user common.User) (string, error) //Create or update specified device's token
+	ExportOrImport(users ...common.User) ([]common.User, error)
 	KeyExists(key string) bool
 	Close() error //Close the database
-}
-
-type User struct {
-	gorm.Model
-	Key      string `gorm:"type:varchar(50);uniqueIndex;not null" json:"key"`
-	Token    string `gorm:"type:varchar(255);" json:"token,omitempty"`
-	Talk     string `gorm:"type:varchar(255);" json:"talk,omitempty"`
-	Location string `gorm:"type:varchar(255);" json:"location,omitempty"`
-	Group    string `gorm:"type:varchar(255);column:user_group;" json:"group,omitempty"`
 }
 
 func InitDatabase() {
@@ -69,7 +60,7 @@ func NewMysql(dsn string) Database {
 		panic("failed to connect database")
 	}
 
-	err = newDB.AutoMigrate(&User{})
+	err = newDB.AutoMigrate(&common.User{})
 	sqlDB, _ := newDB.DB()
 	// MySQL connection pool
 	sqlDB.SetMaxOpenConns(50)
@@ -97,7 +88,7 @@ func NewSqlite3() Database {
 		panic("failed to connect database")
 	}
 
-	err = newDB.AutoMigrate(&User{})
+	err = newDB.AutoMigrate(&common.User{})
 
 	if err != nil {
 		panic("failed to connect database")
@@ -141,7 +132,7 @@ func ExportData() {
 func ImportData() {
 	path := common.BaseDir(filePath)
 	if _, existErr := os.Stat(path); existErr != nil {
-		var users []User
+		var users []common.User
 		data, err := os.ReadFile(path)
 		if err != nil {
 			log.Println("Import Failed", err.Error())

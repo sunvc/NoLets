@@ -17,12 +17,11 @@ func SetupRouter(engine *gin.Engine) {
 	router.GET("/", controller.Home)
 	router.POST("/", controller.Home)
 
-	{
+	if common.LocalConfig.System.Voice {
 		ptt := router.Group("/ptt")
 		ptt.POST("connect", controller.PttConnect)
 		ptt.POST("/voice", controller.PttVoice)
 		ptt.GET("/voice/:name", controller.PttVoice)
-
 	}
 
 	// Used internally by the App

@@ -1,48 +1,51 @@
 package common
 
 const (
-	Category         = "category"               // push view type
-	CategoryDefault  = "myNotificationCategory" // default category
-	CategoryMarkdown = "markdown"               // markdown
-	AutoCopyDefault  = "0"                      // default auto copy
-	LevelDefault     = "active"                 // default push level
-	DeviceKey        = "devicekey"              // device key
-	DeviceKeys       = "devicekeys"             // device key list
-	DeviceToken      = "devicetoken"            // device token
+	CATEGORY         = "category"               // push view type
+	CATEGORYDEFAULT  = "myNotificationCategory" // default category
+	CATEGORYMARKDOWN = "markdown"               // markdown
+	AUTOCOPYDEFAULT  = "0"                      // default auto copy
+	LEVELDEFAULT     = "active"                 // default push level
+	DEVICEKEY        = "devicekey"              // device key
+	DEVICEKEYS       = "devicekeys"             // device key list
+	DEVICETOKEN      = "devicetoken"            // device token
 	ID               = "id"                     // ID
-	Title            = "title"                  // title
-	Host             = "host"                   // host
-	Callback         = "callback"               // callback
-	Subtitle         = "subtitle"               // subtitle
-	CipherText       = "ciphertext"             // ciphertext
-	Image            = "image"                  // image
-	Icon             = "icon"                   // icon
-	Url              = "url"                    // url
-	Body             = "body"                   // body
-	Content          = "content"                // content (compatible)
-	Text             = "text"                   // text (compatible)
-	Message          = "message"                // message (compatible)
-	Data             = "data"                   // data (compatible)
-	Group            = "group"                  // group
-	Sound            = "sound"                  // sound
-	AutoCopy         = "autocopy"               // auto copy
-	Copy             = "copy"                   // content to copy
-	Level            = "level"                  // push level
-	Badge            = "badge"                  // unread count
-	Markdown         = "markdown"               // whether is markdown format
+	TITLE            = "title"                  // title
+	HOST             = "host"                   // host
+	CALLBACK         = "callback"               // callback
+	SUBTITLE         = "subtitle"               // subtitle
+	CIPHERTEXT       = "ciphertext"             // ciphertext
+	IMAGE            = "image"                  // image
+	ICON             = "icon"                   // icon
+	URL              = "url"                    // url
+	BODY             = "body"                   // body
+	CONTENT          = "content"                // content (compatible)
+	TEXT             = "text"                   // text (compatible)
+	MESSAGE          = "message"                // message (compatible)
+	DATA             = "data"                   // data (compatible)
+	GROUP            = "group"                  // group
+	SOUND            = "sound"                  // sound
+	AUTOCOPY         = "autocopy"               // auto copy
+	COPY             = "copy"                   // content to copy
+	LEVEL            = "level"                  // push level
+	BADGE            = "badge"                  // unread count
+	MARKDOWN         = "markdown"               // whether is markdown format
 	MD               = "md"                     // whether it is markdown format (short)
-	UserName         = "username"               // username
-	Password         = "password"               // password
-	PushGroupName    = "pushgroupname"          // push group name
+	USERNAME         = "username"               // username
+	PASSWORD         = "password"               // password
+	PUSHGROUPNAME    = "pushgroupname"          // push group name
+	LOCATION         = "location"
+	TTLPARAM         = "ttl"
+	REPLYPARAM       = "reply"
 )
 
 const (
-	HeaderContentType   = "Content-Type"
-	HeaderUserAgent     = "User-Agent"
-	MIMEImageJpeg       = "image/jpeg"
-	MIMEImagePng        = "image/png"
-	MIMEImageSvg        = "image/svg+xml"
-	MIMEApplicationJSON = "application/json"
+	HEADERCONTENTTYPE   = "Content-Type"
+	HEADERUSERAGENT     = "User-Agent"
+	MIMEIMAGEJPEG       = "image/jpeg"
+	MIMEIMAGEPNG        = "image/png"
+	MIMEIMAGESVG        = "image/svg+xml"
+	MIMEAPPLICATIONJSON = "application/json"
 )
 
 const (
@@ -50,12 +53,12 @@ const (
 )
 
 var SkipKeys = map[string]struct{}{
-	DeviceKey:   {},
-	DeviceKeys:  {},
-	DeviceToken: {},
-	Title:       {},
-	Subtitle:    {},
-	Body:        {},
-	Sound:       {},
-	Category:    {},
+	DEVICEKEY:   {},
+	DEVICEKEYS:  {},
+	DEVICETOKEN: {},
+	TITLE:       {},
+	SUBTITLE:    {},
+	BODY:        {},
+	SOUND:       {},
+	CATEGORY:    {},
 }

@@ -23,6 +23,7 @@ var LocalConfig = &Config{
 		Cert:                  "",
 		Key:                   "",
 		ReduceMemoryUsage:     false,
+		Voice:                 false,
 		ProxyHeader:           "",
 		MaxBatchPushCount:     -1,
 		MaxAPNSClientCount:    1,
