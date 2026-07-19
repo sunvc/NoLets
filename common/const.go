@@ -29,8 +29,8 @@ const (
 	COPY             = "copy"                   // content to copy
 	LEVEL            = "level"                  // push level
 	BADGE            = "badge"                  // unread count
-	MARKDOWN         = "markdown"               // whether is markdown format
-	MD               = "md"                     // whether it is markdown format (short)
+	MARKDOWN         = "markdown"               // whether is Markdown format
+	MD               = "md"                     // whether it is Markdown format (short)
 	USERNAME         = "username"               // username
 	PASSWORD         = "password"               // password
 	PUSHGROUPNAME    = "pushgroupname"          // push group name
