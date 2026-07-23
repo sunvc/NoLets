@@ -63,6 +63,19 @@ type PushTask struct {
 	Url   string
 }
 
+// PushWakeupTask is the per-recipient payload of a WebSocket wake-up push.
+// One task = one APNs notification. Populated by firePushForSession, drained
+// by startPushWakeupWorker.
+type PushWakeupTask struct {
+	Token     string
+	Name      string // recipient display name (unused in payload today — kept for logging)
+	Channel   string
+	SessionID string
+	Host      string
+	From      string
+	FromName  string
+}
+
 type JoinParams struct {
 	PttUser
 	Channels []string `json:"channels"`

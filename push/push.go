@@ -169,3 +169,61 @@ func PttPush(url string, name string, token string) error {
 	}
 	return nil
 }
+
+// PttWakeupParams carries the routing info a WebSocket-based PTT receiver
+// needs to reconnect and subscribe to an in-flight session. Callers should
+// populate every field; empty values are permitted but produce degraded UX
+// on the client side (no speaker label, no replay).
+type PttWakeupParams struct {
+	Channel   string
+	SessionID string
+	Host      string
+	From      string
+	FromName  string
+}
+
+// PttPushWakeup sends a `voip-ptt` push that tells the client "connect the
+// WebSocket, SUBSCRIBE to this session, listen". Distinct from PttPush (which
+// carries a completed voice URL for the legacy REST path) — the client picks
+// which handler to run based on whether session_id or url is present.
+func PttPushWakeup(p PttWakeupParams, token string) error {
+	pl := payload.NewPayload().ContentAvailable()
+
+	if p.Channel != "" {
+		pl.Custom("channel", p.Channel)
+	}
+	if p.SessionID != "" {
+		pl.Custom("session_id", p.SessionID)
+	}
+	if p.Host != "" {
+		pl.Custom("host", p.Host)
+	}
+	if p.From != "" {
+		pl.Custom("from", p.From)
+	}
+	if p.FromName != "" {
+		pl.Custom("name", p.FromName)
+		pl.Custom("from_name", p.FromName)
+	}
+
+	CLI := <-CLIENTS
+	CLIENTS <- CLI
+
+	resp, err := CLI.Push(&apns2.Notification{
+		DeviceToken: token,
+		Topic:       common.LocalConfig.Apple.Topic + ".voip-ptt",
+		Payload:     pl,
+		// 15 s window: if the client hasn't managed to connect by then the
+		// session is probably already over and there's nothing left to hear.
+		Expiration: common.DateNow().Add(15 * time.Second),
+		PushType:   apns2.PushTypePushToTalk,
+		Priority:   apns2.PriorityHigh,
+	})
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("APNs wakeup push failed: %s", resp.Reason)
+	}
+	return nil
+}

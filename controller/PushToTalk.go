@@ -34,6 +34,7 @@ func PttConnect(c *gin.Context) {
 
 		PushToTalk2.SyncChannels(req.PttUser, req.Channels)
 
+		PushToTalk2.ChannelLock.RLock()
 		for _, channel := range req.Channels {
 			ch, ok := PushToTalk2.Channels[channel]
 			if !ok {
@@ -45,10 +46,17 @@ func PttConnect(c *gin.Context) {
 				Users:   ch.UserListResp(),
 			})
 		}
+		PushToTalk2.ChannelLock.RUnlock()
 
 		c.JSON(200, common.Success(c, response))
 	}
 
+}
+
+// PttWS handles the WebSocket upgrade for the real-time PTT channel.
+// The actual protocol lives in the PushToTalk internal package.
+func PttWS(c *gin.Context) {
+	PushToTalk2.ServeWS(c)
 }
 
 func PttVoice(c *gin.Context) {
@@ -69,7 +77,7 @@ func PttVoice(c *gin.Context) {
 			return
 		}
 
-		savePath := filepath.Join("data", "voices", fileName)
+		savePath := common.BaseDir("voices", fileName)
 
 		file, err := os.Create(savePath)
 		defer func() { _ = file.Close() }()

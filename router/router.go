@@ -22,6 +22,7 @@ func SetupRouter(engine *gin.Engine) {
 		ptt.POST("connect", controller.PttConnect)
 		ptt.POST("/voice", controller.PttVoice)
 		ptt.GET("/voice/:name", controller.PttVoice)
+		ptt.GET("/ws", controller.PttWS)
 	}
 
 	// Used internally by the App

@@ -11,6 +11,11 @@ var (
 	ChannelLock   sync.RWMutex
 	MsgQueue      = make(chan VoiceMessage, 1000)
 	PushTaskQueue = make(chan PushTask, 1000)
+
+	// PushWakeupTaskQueue serialises WebSocket-based PTT wake-up pushes.
+	// Kept separate from PushTaskQueue so the legacy voice-URL flow and the
+	// new session-wakeup flow can't starve each other.
+	PushWakeupTaskQueue = make(chan PushWakeupTask, 1000)
 )
 
 // SyncChannels 核心方法：对比新旧频道列表，自动增量加入和退出

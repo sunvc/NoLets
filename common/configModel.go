@@ -46,6 +46,15 @@ type System struct {
 	ICPInfo               string        `mapstructure:"icp_info" json:"icp_info" yaml:"icp_info" koanf:"icp_info"`
 	TimeZone              string        `mapstructure:"time_zone" json:"time_zone" yaml:"time_zone" koanf:"time_zone"`
 	Auths                 []string      `mapstructure:"auths" json:"auths" yaml:"auths" koanf:"auths"`
+
+	// WebSocket PTT settings
+	WSHeartbeatInterval time.Duration `mapstructure:"ws_heartbeat_interval" json:"ws_heartbeat_interval" yaml:"ws_heartbeat_interval" koanf:"ws_heartbeat_interval"`
+	WSReadTimeout       time.Duration `mapstructure:"ws_read_timeout" json:"ws_read_timeout" yaml:"ws_read_timeout" koanf:"ws_read_timeout"`
+	WSRingBufferTTL     time.Duration `mapstructure:"ws_ring_buffer_ttl" json:"ws_ring_buffer_ttl" yaml:"ws_ring_buffer_ttl" koanf:"ws_ring_buffer_ttl"`
+	WSSessionMaxHold    time.Duration `mapstructure:"ws_session_max_hold" json:"ws_session_max_hold" yaml:"ws_session_max_hold" koanf:"ws_session_max_hold"`
+	WSSessionGCInterval time.Duration `mapstructure:"ws_session_gc_interval" json:"ws_session_gc_interval" yaml:"ws_session_gc_interval" koanf:"ws_session_gc_interval"`
+	WSMaxFrameBytes     int           `mapstructure:"ws_max_frame_bytes" json:"ws_max_frame_bytes" yaml:"ws_max_frame_bytes" koanf:"ws_max_frame_bytes"`
+	WSSendQueueSize     int           `mapstructure:"ws_send_queue_size" json:"ws_send_queue_size" yaml:"ws_send_queue_size" koanf:"ws_send_queue_size"`
 }
 
 type Apple struct {
@@ -142,6 +151,30 @@ func (global *Config) SetConfig(configPath string) {
 	}
 	if len(conf.System.TimeZone) > 0 {
 		global.System.TimeZone = conf.System.TimeZone
+	}
+
+	// WebSocket PTT overrides — only apply positive durations / sizes so the
+	// caller's baked-in defaults survive an empty config.
+	if conf.System.WSHeartbeatInterval > 0 {
+		global.System.WSHeartbeatInterval = conf.System.WSHeartbeatInterval
+	}
+	if conf.System.WSReadTimeout > 0 {
+		global.System.WSReadTimeout = conf.System.WSReadTimeout
+	}
+	if conf.System.WSRingBufferTTL > 0 {
+		global.System.WSRingBufferTTL = conf.System.WSRingBufferTTL
+	}
+	if conf.System.WSSessionMaxHold > 0 {
+		global.System.WSSessionMaxHold = conf.System.WSSessionMaxHold
+	}
+	if conf.System.WSSessionGCInterval > 0 {
+		global.System.WSSessionGCInterval = conf.System.WSSessionGCInterval
+	}
+	if conf.System.WSMaxFrameBytes > 0 {
+		global.System.WSMaxFrameBytes = conf.System.WSMaxFrameBytes
+	}
+	if conf.System.WSSendQueueSize > 0 {
+		global.System.WSSendQueueSize = conf.System.WSSendQueueSize
 	}
 
 	if len(conf.Apple.ApnsPrivateKey) > 0 {

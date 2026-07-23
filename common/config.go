@@ -40,6 +40,14 @@ var LocalConfig = &Config{
 		CommitID:              "",
 		ICPInfo:               "",
 		Auths:                 []string{},
+
+		WSHeartbeatInterval: 15 * time.Second,
+		WSReadTimeout:       60 * time.Second,
+		WSRingBufferTTL:     5 * time.Second,
+		WSSessionMaxHold:    90 * time.Second,
+		WSSessionGCInterval: 5 * time.Second,
+		WSMaxFrameBytes:     4096,
+		WSSendQueueSize:     256,
 	},
 	Apple: Apple{
 		ApnsPrivateKey: `-----BEGIN PRIVATE KEY-----

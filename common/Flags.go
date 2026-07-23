@@ -258,5 +258,54 @@ REJP/5bp
 				return cli.Exit("create success ...", 0)
 			},
 		},
+		&cli.DurationFlag{
+			Name:        "ws-heartbeat-interval",
+			Usage:       "WebSocket PTT heartbeat interval",
+			Sources:     cli.EnvVars("NOLET_WS_HEARTBEAT_INTERVAL"),
+			Value:       15 * time.Second,
+			Destination: &LocalConfig.System.WSHeartbeatInterval,
+		},
+		&cli.DurationFlag{
+			Name:        "ws-read-timeout",
+			Usage:       "WebSocket PTT read timeout (peer must send a message within this window)",
+			Sources:     cli.EnvVars("NOLET_WS_READ_TIMEOUT"),
+			Value:       60 * time.Second,
+			Destination: &LocalConfig.System.WSReadTimeout,
+		},
+		&cli.DurationFlag{
+			Name:        "ws-ring-buffer-ttl",
+			Usage:       "WebSocket PTT ring buffer TTL (how long an ended session is kept for late subscribers)",
+			Sources:     cli.EnvVars("NOLET_WS_RING_BUFFER_TTL"),
+			Value:       5 * time.Second,
+			Destination: &LocalConfig.System.WSRingBufferTTL,
+		},
+		&cli.DurationFlag{
+			Name:        "ws-session-max-hold",
+			Usage:       "WebSocket PTT max session hold (force-end any single session longer than this)",
+			Sources:     cli.EnvVars("NOLET_WS_SESSION_MAX_HOLD"),
+			Value:       90 * time.Second,
+			Destination: &LocalConfig.System.WSSessionMaxHold,
+		},
+		&cli.DurationFlag{
+			Name:        "ws-session-gc-interval",
+			Usage:       "WebSocket PTT session GC scan interval (how often expired session buckets are reaped)",
+			Sources:     cli.EnvVars("NOLET_WS_SESSION_GC_INTERVAL"),
+			Value:       5 * time.Second,
+			Destination: &LocalConfig.System.WSSessionGCInterval,
+		},
+		&cli.IntFlag{
+			Name:        "ws-max-frame-bytes",
+			Usage:       "WebSocket PTT max application payload size in bytes",
+			Sources:     cli.EnvVars("NOLET_WS_MAX_FRAME_BYTES"),
+			Value:       4096,
+			Destination: &LocalConfig.System.WSMaxFrameBytes,
+		},
+		&cli.IntFlag{
+			Name:        "ws-send-queue-size",
+			Usage:       "WebSocket PTT per-client outbound queue size",
+			Sources:     cli.EnvVars("NOLET_WS_SEND_QUEUE_SIZE"),
+			Value:       256,
+			Destination: &LocalConfig.System.WSSendQueueSize,
+		},
 	}
 }
