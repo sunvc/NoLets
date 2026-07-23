@@ -1,6 +1,7 @@
 package PushToTalk
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"testing"
 	"time"
@@ -146,8 +147,16 @@ func TestHandleAudioForwardsAndBuffers(t *testing.T) {
 		if out.Type != TypeAudio || out.Seq != 42 || out.Ts != 800 {
 			t.Fatalf("bad header: %+v", out)
 		}
-		if string(out.Payload) != string(payload) {
-			t.Fatalf("payload mismatch")
+		// Payload is now [session_tag: 4 bytes BE | original payload].
+		if len(out.Payload) != 4+len(payload) {
+			t.Fatalf("payload length mismatch: got %d, want %d", len(out.Payload), 4+len(payload))
+		}
+		tag := binary.BigEndian.Uint32(out.Payload[0:4])
+		if tag == 0 {
+			t.Fatalf("session_tag is zero")
+		}
+		if string(out.Payload[4:]) != string(payload) {
+			t.Fatalf("payload mismatch after tag")
 		}
 	default:
 		t.Fatal("peer got no forwarded audio")

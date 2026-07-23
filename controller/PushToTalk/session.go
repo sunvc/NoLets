@@ -1,7 +1,9 @@
 package PushToTalk
 
 import (
+	"encoding/binary"
 	"encoding/json"
+	"hash/fnv"
 	"log"
 	"sync"
 	"sync/atomic"
@@ -31,6 +33,7 @@ type SessionBucket struct {
 	FromName  string
 	StartedAt int64 // unix ms
 	Meta      SessionMeta
+	Tag       uint32 // 4-byte tag injected into every AUDIO payload so receivers can demux concurrent talkers
 
 	// pushed guards the one-shot APNs wake-up for offline channel members.
 	// It flips true the moment the first AUDIO frame is observed.
@@ -134,6 +137,7 @@ type StartPayload struct {
 // the moment a session begins.
 type StartBroadcastPayload struct {
 	SessionID  string `json:"session_id"`
+	SessionTag uint32 `json:"session_tag"`
 	Channel    string `json:"channel"`
 	From       string `json:"from"`
 	FromName   string `json:"from_name"`
@@ -270,6 +274,19 @@ func handleStart(client *Client, frame *Frame) {
 		clearClientSession(client.ID)
 	}
 
+	// Generate a 4-byte session tag from the session ID + client ID. It
+	// is injected into every AUDIO frame so receiving clients can demux
+	// concurrent talkers without relying on server-side preemption alone.
+	// fnv.New32a is fast, deterministic, and produces well-distributed
+	// 32-bit tags for the lifetime of a session.
+	tagHasher := fnv.New32a()
+	tagHasher.Write([]byte(p.SessionID))
+	tagHasher.Write([]byte(client.ID))
+	sessionTag := tagHasher.Sum32()
+	if sessionTag == 0 {
+		sessionTag = 1 // reserve 0 for "no tag / backward compat"
+	}
+
 	bucket := &SessionBucket{
 		ID:        p.SessionID,
 		Channel:   p.Channel,
@@ -282,6 +299,7 @@ func handleStart(client *Client, frame *Frame) {
 			FrameMs:    p.FrameMs,
 			Bitrate:    p.Bitrate,
 		},
+		Tag:        sessionTag,
 		lastActive: now,
 	}
 	setClientSession(client.ID, bucket)
@@ -290,6 +308,7 @@ func handleStart(client *Client, frame *Frame) {
 	// Broadcast the START notice to same-channel peers.
 	notice, _ := json.Marshal(StartBroadcastPayload{
 		SessionID:  bucket.ID,
+		SessionTag: bucket.Tag,
 		Channel:    bucket.Channel,
 		From:       bucket.From,
 		FromName:   bucket.FromName,
@@ -299,8 +318,8 @@ func handleStart(client *Client, frame *Frame) {
 		FrameMs:    bucket.Meta.FrameMs,
 	})
 	FanoutRaw(bucket.Channel, client.ID, EncodeFrame(TypeStartBroadcast, 0, 0, notice))
-	log.Printf("[ptt-ws] session start id=%s user=%s ch=%s sr=%d fr=%dms",
-		bucket.ID, client.ID, bucket.Channel, bucket.Meta.SampleRate, bucket.Meta.FrameMs)
+	log.Printf("[ptt-ws] session start id=%s tag=%d user=%s ch=%s sr=%d fr=%dms",
+		bucket.ID, bucket.Tag, client.ID, bucket.Channel, bucket.Meta.SampleRate, bucket.Meta.FrameMs)
 }
 
 // handleAudio forwards a single Opus packet to all channel peers. The frame
@@ -333,12 +352,15 @@ func handleAudio(client *Client, frame *Frame, raw []byte) {
 		Payload: payloadCopy,
 	})
 
-	// Fan-out uses the already-encoded raw buffer directly. Each writer
-	// goroutine writes it to its own connection, so the shared []byte is
-	// only read after this point (no mutation).
-	rawCopy := make([]byte, len(raw))
-	copy(rawCopy, raw)
-	FanoutRaw(bucket.Channel, client.ID, rawCopy)
+	// Build a tagged payload for receivers: [session_tag: uint32 BE | opus_data].
+	// This lets the iOS client demux AUDIO frames to the correct ReceiveSession
+	// even when multiple talkers are active on the same channel.
+	taggedPayload := make([]byte, 4+len(frame.Payload))
+	binary.BigEndian.PutUint32(taggedPayload[0:4], bucket.Tag)
+	copy(taggedPayload[4:], frame.Payload)
+
+	taggedRaw := EncodeFrame(TypeAudio, frame.Seq, frame.Ts, taggedPayload)
+	FanoutRaw(bucket.Channel, client.ID, taggedRaw)
 }
 
 // handleEnd marks the session ended, broadcasts END_BROADCAST, and clears the
@@ -410,6 +432,7 @@ func handleSubscribe(client *Client, frame *Frame) {
 	// can reuse its handleStartBroadcast code path to build state.
 	begin, _ := json.Marshal(StartBroadcastPayload{
 		SessionID:  bucket.ID,
+		SessionTag: bucket.Tag,
 		Channel:    bucket.Channel,
 		From:       bucket.From,
 		FromName:   bucket.FromName,
@@ -422,9 +445,14 @@ func handleSubscribe(client *Client, frame *Frame) {
 
 	// Snapshot outside the fan-out lock — writing on a slow client should not
 	// stall other writers.
+	// Replay AUDIO frames must carry the session_tag prefix so the receiver
+	// can route them before START_BROADCAST arrives during APNs wake-up.
 	snap := bucket.Snapshot()
 	for _, rec := range snap {
-		client.Send <- EncodeFrame(TypeAudio, rec.Seq, rec.TsMs, rec.Payload)
+		taggedPayload := make([]byte, 4+len(rec.Payload))
+		binary.BigEndian.PutUint32(taggedPayload[0:4], bucket.Tag)
+		copy(taggedPayload[4:], rec.Payload)
+		client.Send <- EncodeFrame(TypeAudio, rec.Seq, rec.TsMs, taggedPayload)
 	}
 
 	end, _ := json.Marshal(ReplayEndPayload{SessionID: bucket.ID})
