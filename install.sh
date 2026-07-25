@@ -3,13 +3,13 @@
 # NoLet Server 一键安装脚本
 #
 # 使用:
-#   curl -fsSL https://raw.githubusercontent.com/sunvc/nolet/main/install.sh | bash
-#   curl -fsSL https://raw.githubusercontent.com/sunvc/nolet/main/install.sh | bash -s -- --dir /opt/nolet --port 8080
+#   curl -fsSL https://raw.githubusercontent.com/sunvc/nolets/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/sunvc/nolets/main/install.sh | bash -s -- --dir /opt/nolet --port 8080
 #
 # 通过环境变量控制:
-#   NOLET_DIR=/opt/nolet NOLET_PORT=8080 NOLET_IMAGE=sunvc/nolet:latest \
+#   NOLET_DIR=/opt/nolet NOLET_PORT=8080 NOLET_IMAGE=sunvc/nolets:latest \
 #   NOLET_SIGN_KEY=xxx NOLET_AUTHS='["uid1","uid2"]' TZ=Asia/Shanghai \
-#     bash -c "$(curl -fsSL https://raw.githubusercontent.com/sunvc/nolet/main/install.sh)"
+#     bash -c "$(curl -fsSL https://raw.githubusercontent.com/sunvc/nolets/main/install.sh)"
 
 set -euo pipefail
 
@@ -24,7 +24,7 @@ if [ -z "${NOLET_DIR:-}" ]; then
     fi
 fi
 NOLET_PORT="${NOLET_PORT:-8080}"
-NOLET_IMAGE="${NOLET_IMAGE:-ghcr.io/sunvc/nolet:latest}"
+NOLET_IMAGE="${NOLET_IMAGE:-ghcr.io/sunvc/nolets:latest}"
 NOLET_SIGN_KEY="${NOLET_SIGN_KEY:-}"
 NOLET_AUTHS="${NOLET_AUTHS:-}"
 NOLET_TZ="${TZ:-Asia/Shanghai}"

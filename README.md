@@ -9,8 +9,62 @@
 
 | App Store | Server Works  |
 |--------|-------|
-| [<img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Pushback App" height="40">](https://apps.apple.com/cn/app/id6615073345) | [![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://github.com/sunvc/nolet-worker) |
+| [<img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Pushback App" height="40">](https://apps.apple.com/cn/app/id6615073345) | [![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://github.com/sunvc/nolets-worker) |
 
+
+### 一键安装 (推荐)
+
+Linux / macOS (需已安装 Docker,Linux 未安装时脚本会自动安装 Docker):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/sunvc/nolets/main/install.sh | bash
+```
+
+脚本会:
+
+1. 检查 / 安装 Docker(macOS 请先自行安装 Docker Desktop)
+2. 在工作目录写入 `compose.yaml`(Linux 默认 `/opt/nolet`,macOS 默认 `~/.nolet`)
+3. 拉取 `ghcr.io/sunvc/nolets:latest` 并通过 `docker compose` 启动容器 `NoLets`
+4. 轮询 `http://127.0.0.1:8080/health` 做健康检查
+
+#### 常用示例
+
+```bash
+# 自定义安装目录、端口,并注入签名密钥与授权 ID 列表
+curl -fsSL https://raw.githubusercontent.com/sunvc/nolets/main/install.sh | bash -s -- \
+    --dir /opt/nolet \
+    --port 8080 \
+    --sign-key "your-sign-key" \
+    --auths '["uid1","uid2"]'
+
+# 通过环境变量传参
+NOLET_PORT=9090 NOLET_SIGN_KEY=xxx TZ=Asia/Shanghai \
+    bash -c "$(curl -fsSL https://raw.githubusercontent.com/sunvc/nolets/main/install.sh)"
+
+# 卸载 (仅移除容器,保留数据目录)
+curl -fsSL https://raw.githubusercontent.com/sunvc/nolets/main/install.sh | bash -s -- --uninstall
+```
+
+#### 所有参数
+
+| 参数 | 环境变量 | 说明 | 默认值 |
+|------|----------|------|--------|
+| `--dir` | `NOLET_DIR` | 工作目录(compose.yaml 与 data 存放位置) | Linux `/opt/nolet` · macOS `~/.nolet` |
+| `--port` | `NOLET_PORT` | 宿主机映射端口 | `8080` |
+| `--image` | `NOLET_IMAGE` | Docker 镜像 | `ghcr.io/sunvc/nolets:latest` |
+| `--sign-key` | `NOLET_SIGN_KEY` | 加密签名密钥 |  |
+| `--auths` | `NOLET_AUTHS` | 管理员 ID 列表,如 `'["uid1","uid2"]'` |  |
+| `--tz` | `TZ` | 时区 | `Asia/Shanghai` |
+| `--name` | `NOLET_CONTAINER` | 容器名 | `NoLets` |
+| `--uninstall` |  | 移除容器 |  |
+
+#### 常用运维命令
+
+```bash
+docker logs -f NoLets                              # 查看日志
+docker restart NoLets                              # 重启
+cd /opt/nolet && docker compose pull && docker compose up -d   # 更新到最新镜像
+```
 
 ### 从GitHub Releases下载
 
@@ -47,23 +101,23 @@
 
 本项目提供了以下Docker镜像地址：
 
-- Docker Hub: `sunvc/nolet:latest`
-- GitHub Container Registry: `ghcr.io/sunvc/nolet:latest`
+- Docker Hub: `sunvc/nolets:latest`
+- GitHub Container Registry: `ghcr.io/sunvc/nolets:latest`
 
 您可以使用以下命令拉取镜像：
 
 ```bash
 # 从Docker Hub拉取
-docker pull sunvc/nolet:latest
+docker pull sunvc/nolets:latest
 
 # 或从GitHub Container Registry拉取
-docker pull ghcr.io/sunvc/nolet:latest
+docker pull ghcr.io/sunvc/nolets:latest
 
 docker run -d --name NoLet-server \
   -p 8080:8080 \
   -v ./data:/data \
   --restart=always \
-  ghcr.io/sunvc/nolet:latest
+  ghcr.io/sunvc/nolets:latest
 ```
 
 #### 使用Docker Compose
@@ -73,7 +127,7 @@ docker run -d --name NoLet-server \
 ```yaml
 services:
   NoLetServer:
-    image: ghcr.io/sunvc/nolet:latest
+    image: ghcr.io/sunvc/nolets:latest
     container_name: NoLets
     restart: always
     ports:

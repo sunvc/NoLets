@@ -11,6 +11,52 @@
 |-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------|
 | [<img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Aero App" height="40">](https://apps.apple.com/us/app/id6615073345) | [![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/sunvc/NoLets-worker) |
 
+### One-line Install (Recommended)
+
+Linux / macOS (Docker required; the script auto-installs Docker on Linux):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/sunvc/nolets/main/install.sh | bash
+```
+
+The script will:
+
+1. Check / install Docker (on macOS please install Docker Desktop first)
+2. Write a `compose.yaml` into the working dir (Linux: `/opt/nolet`, macOS: `~/.nolet`)
+3. Pull `ghcr.io/sunvc/nolets:latest` and start the `NoLets` container via `docker compose`
+4. Health-check `http://127.0.0.1:8080/health`
+
+#### Examples
+
+```bash
+# Custom dir, port, sign key and admin auth list
+curl -fsSL https://raw.githubusercontent.com/sunvc/nolets/main/install.sh | bash -s -- \
+    --dir /opt/nolet \
+    --port 8080 \
+    --sign-key "your-sign-key" \
+    --auths '["uid1","uid2"]'
+
+# Or via environment variables
+NOLET_PORT=9090 NOLET_SIGN_KEY=xxx TZ=Asia/Shanghai \
+    bash -c "$(curl -fsSL https://raw.githubusercontent.com/sunvc/nolets/main/install.sh)"
+
+# Uninstall (removes the container, keeps the data directory)
+curl -fsSL https://raw.githubusercontent.com/sunvc/nolets/main/install.sh | bash -s -- --uninstall
+```
+
+#### Flags
+
+| Flag | Env | Description | Default |
+|------|-----|-------------|---------|
+| `--dir` | `NOLET_DIR` | Working directory (compose.yaml + data) | Linux `/opt/nolet` · macOS `~/.nolet` |
+| `--port` | `NOLET_PORT` | Host port | `8080` |
+| `--image` | `NOLET_IMAGE` | Docker image | `ghcr.io/sunvc/nolets:latest` |
+| `--sign-key` | `NOLET_SIGN_KEY` | Sign key |  |
+| `--auths` | `NOLET_AUTHS` | Admin ID list, e.g. `'["uid1","uid2"]'` |  |
+| `--tz` | `TZ` | Timezone | `Asia/Shanghai` |
+| `--name` | `NOLET_CONTAINER` | Container name | `NoLets` |
+| `--uninstall` |  | Remove the container |  |
+
 ### Download from GitHub Releases
 
 You can download pre-compiled binaries from the GitHub Releases page:
@@ -46,23 +92,23 @@ You can download pre-compiled binaries from the GitHub Releases page:
 
 This project provides the following Docker image addresses:
 
-- Docker Hub: `sunvc/nolet:latest`
-- GitHub Container Registry: `ghcr.io/sunvc/nolet:latest`
+- Docker Hub: `sunvc/nolets:latest`
+- GitHub Container Registry: `ghcr.io/sunvc/nolets:latest`
 
 You can pull the image using the following command:
 
 ```bash
 # Pull from Docker Hub
-docker pull sunvc/nolet:latest
+docker pull sunvc/nolets:latest
 
 # Or pull from GitHub Container Registry
-docker pull ghcr.io/sunvc/nolet:latest
+docker pull ghcr.io/sunvc/nolets:latest
 
 docker run -d --name NoLet-server \
   -p 8080:8080 \
   -v ./data:/data \
   --restart=always \
-  ghcr.io/sunvc/nolet:latest
+  ghcr.io/sunvc/nolets:latest
 ```
 
 #### Using Docker Compose
@@ -72,7 +118,7 @@ The `compose.yaml` file in the project root directory is already configured to u
 ```yaml
 services:
   NoLetServer:
-    image: ghcr.io/sunvc/nolet:latest
+    image: ghcr.io/sunvc/nolets:latest
     container_name: NoLets
     restart: always
     ports:
