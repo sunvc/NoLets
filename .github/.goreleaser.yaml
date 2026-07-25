@@ -68,8 +68,29 @@ release:
   name_template: "{{ .ProjectName }} {{ .Tag }}"
   mode: append
   header: |
-    Example Download Links:
-     curl -L -H "os:linux-amd" -o nolets.tar.gz https://wzs.app
+    ## 快速安装 (自动识别系统 / 架构)
+
+    Linux / macOS —— 一行下载并解压到当前目录:
+
+    ```bash
+    curl -fsSL "https://github.com/sunvc/NoLets/releases/download/{{ .Tag }}/NoLets_$(uname -s)_$(uname -m).tar.gz" \
+      | tar -xz && ./NoLets --config config.yaml
+    ```
+
+    如果 `uname` 输出不匹配下载名(例如 `aarch64` / `x86_64`),用下面这段自动映射:
+
+    ```bash
+    OS=$(uname -s); ARCH=$(uname -m)
+    case "$ARCH" in x86_64|amd64) ARCH=amd64;; aarch64|arm64) ARCH=arm64;; esac
+    curl -fsSL "https://github.com/sunvc/NoLets/releases/download/{{ .Tag }}/NoLets_${OS}_${ARCH}.tar.gz" \
+      | tar -xz && chmod +x ./NoLets && ./NoLets --config config.yaml
+    ```
+
+    Docker 一键部署:
+
+    ```bash
+    curl -fsSL https://raw.githubusercontent.com/sunvc/nolets/main/install.sh | bash
+    ```
   extra_files:
     - glob: ./deploy/pushback.p8
     - glob: ./deploy/config.yaml
