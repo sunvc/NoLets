@@ -22,7 +22,23 @@ func startPttConsumer(workerID int) {
 				}
 			}()
 
-			users := Channels[msg.Channel].UserList()
+			ChannelLock.RLock()
+			channel, chOK := Channels[msg.Channel]
+			if !chOK {
+				ChannelLock.RUnlock()
+				fmt.Printf("[PttConsumer-%d] 频道不存在: %s (sender=%s)\n", workerID, msg.Channel, msg.Sender)
+				return
+			}
+			users := channel.UserList()
+			ChannelLock.RUnlock()
+
+			// 诊断日志：打印所有在线用户 ID 与 sender 的比对
+			ids := make([]string, 0, len(users))
+			for _, u := range users {
+				ids = append(ids, fmt.Sprintf("%s(tok=%d)", u.ID, len(u.Token)))
+			}
+			fmt.Printf("[PttConsumer-%d] channel=%s sender=%q users=%v\n",
+				workerID, msg.Channel, msg.Sender, ids)
 
 			// 极速拷贝目标用户列表，排除发送者本人，并迅速释放锁
 			targets := make([]PttUser, 0, len(users))
@@ -30,6 +46,9 @@ func startPttConsumer(workerID int) {
 				if user.ID != msg.Sender && user.Token != "" {
 
 					targets = append(targets, user)
+				} else if user.ID == msg.Sender {
+					fmt.Printf("[PttConsumer-%d] ⚠️ 排除自己: user.ID=%q sender=%q\n",
+						workerID, user.ID, msg.Sender)
 				}
 			}
 
