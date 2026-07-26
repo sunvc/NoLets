@@ -2,7 +2,6 @@ package PushToTalk
 
 type PttUser struct {
 	ID        string  `json:"id"`
-	Name      string  `json:"name"`
 	Latitude  float64 `json:"latitude"`
 	Longitude float64 `json:"longitude"`
 	Token     string  `json:"token"`
@@ -36,7 +35,6 @@ func (c *Channel) UserListResp() []PttUserResp {
 
 				userList = append(userList, PttUserResp{
 					ID:        userPtr.ID,
-					Name:      userPtr.Name,
 					Latitude:  userPtr.Latitude,
 					Longitude: userPtr.Longitude,
 					Timestamp: userPtr.Timestamp,
@@ -59,7 +57,6 @@ type VoiceMessage struct {
 
 type PushTask struct {
 	Token string
-	Name  string
 	Url   string
 }
 

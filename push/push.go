@@ -141,11 +141,10 @@ func GetToken() (auth string, expirted int64) {
 	return CLI.Token.GenerateIfExpired(), CLI.Token.IssuedAt + token.TokenTimeout
 }
 
-func PttPush(url string, name string, token string) error {
+func PttPush(url string, token string) error {
 	pl := payload.NewPayload().ContentAvailable()
 
 	pl.Custom("url", url)
-	pl.Custom("name", name)
 
 	CLI := <-CLIENTS // Get a client from the pool
 	CLIENTS <- CLI   // Put the client back into the pool

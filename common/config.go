@@ -30,8 +30,8 @@ var LocalConfig = &Config{
 		MaxDeviceKeyArrLength: 10,
 		Concurrency:           256 * 1024,
 		ReadTimeout:           3 * time.Second,
-		WriteTimeout:          3 * time.Second,
-		IdleTimeout:           3 * time.Second,
+		WriteTimeout:          3 * time.Second, // 普通 API 兜底,SSE handler 内会单独 SetWriteDeadline(0) 清掉
+		IdleTimeout:           10 * time.Second,
 		CustomHttps:           false,
 		ProxyDownload:         false,
 		Debug:                 false,

@@ -70,23 +70,16 @@ release:
   header: |
     ## 快速安装 (自动识别系统 / 架构)
 
-    Linux / macOS —— 一行下载并解压到当前目录:
+    Linux / macOS —— 一行下载、解压并运行:
 
     ```bash
-    curl -fsSL "https://github.com/sunvc/NoLets/releases/download/{{ .Tag }}/NoLets_$(uname -s)_$(uname -m).tar.gz" \
-      | tar -xz && ./NoLets --config config.yaml
-    ```
-
-    如果 `uname` 输出不匹配下载名(例如 `aarch64` / `x86_64`),用下面这段自动映射:
-
-    ```bash
-    OS=$(uname -s); ARCH=$(uname -m)
-    case "$ARCH" in x86_64|amd64) ARCH=amd64;; aarch64|arm64) ARCH=arm64;; esac
+    OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+    ARCH=$(uname -m); case "$ARCH" in x86_64|amd64) ARCH=amd64;; aarch64|arm64) ARCH=arm64;; esac
     curl -fsSL "https://github.com/sunvc/NoLets/releases/download/{{ .Tag }}/NoLets_${OS}_${ARCH}.tar.gz" \
       | tar -xz && chmod +x ./NoLets && ./NoLets --config config.yaml
     ```
 
-    Docker 一键部署:
+    Docker 一键部署 (自动装 Docker、拉镜像、健康检查):
 
     ```bash
     curl -fsSL https://raw.githubusercontent.com/sunvc/nolets/main/install.sh | bash

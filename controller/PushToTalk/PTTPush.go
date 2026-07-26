@@ -59,7 +59,6 @@ func startPttConsumer(workerID int) {
 			// 拆解成独立的原子任务，塞入第二级队列
 			for _, token := range targets {
 				task := PushTask{
-					Name:  token.Name,
 					Token: token.Token,
 					Url:   msg.Host + "/ptt/voice/" + msg.FileName,
 				}
@@ -86,7 +85,7 @@ func startPushTaskWorker(workerID int) {
 			}()
 
 			// 调用底层的推送方法
-			if err := push.PttPush(task.Url, task.Name, task.Token); err != nil {
+			if err := push.PttPush(task.Url, task.Token); err != nil {
 				fmt.Println(fmt.Printf("[PushWorker-%d] 苹果推送失败 (Token: %s): %v\n", workerID, task.Token[:10], err))
 			}
 		}()
