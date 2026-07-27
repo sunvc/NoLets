@@ -25,30 +25,32 @@ func PttConnect(c *gin.Context) {
 		return
 	}
 
+	// 频道成员维护完全由 SSE (/ptt/subscribe) 承担:
+	//   - subscribe 建连时 SyncChannels(channels) 广播 EventJoin
+	//   - subscribe 断开时 SyncChannels([]) 广播 EventLeave
+	// PttConnect 只做"读取当前快照"用途,不再改写 Channels/UserChannels,
+	// 避免与 SSE 重复写入导致重复 join/leave 广播。
 	if req.Token == "" {
-		PushToTalk2.SyncChannels(req.PttUser, []string{})
 		c.JSON(200, common.Success(c, []PushToTalk2.JoinResponse{}))
-
-	} else {
-		var response []PushToTalk2.JoinResponse
-
-		PushToTalk2.SyncChannels(req.PttUser, req.Channels)
-
-		for _, channel := range req.Channels {
-			ch, ok := PushToTalk2.Channels[channel]
-			if !ok {
-				continue
-			}
-			response = append(response, PushToTalk2.JoinResponse{
-				Channel: channel,
-				Host:    req.Host,
-				Users:   ch.UserListResp(),
-			})
-		}
-
-		c.JSON(200, common.Success(c, response))
+		return
 	}
 
+	var response []PushToTalk2.JoinResponse
+	PushToTalk2.ChannelLock.RLock()
+	for _, channel := range req.Channels {
+		ch, ok := PushToTalk2.Channels[channel]
+		if !ok {
+			continue
+		}
+		response = append(response, PushToTalk2.JoinResponse{
+			Channel: channel,
+			Host:    req.Host,
+			Users:   ch.UserListResp(),
+		})
+	}
+	PushToTalk2.ChannelLock.RUnlock()
+
+	c.JSON(200, common.Success(c, response))
 }
 
 func PttVoice(c *gin.Context) {
