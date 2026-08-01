@@ -145,6 +145,9 @@ func main() {
 				log.Printf("Database close error: %v", err)
 			}
 
+			// Persist PTT channel/user state
+			PushToTalk.ShutdownPttSystem()
+
 			// Close APNS client resources
 			push.CloseAPNSClients()
 

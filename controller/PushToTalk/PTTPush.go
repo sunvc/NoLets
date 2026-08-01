@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/sunvc/NoLets/common"
 	"github.com/sunvc/NoLets/push"
 )
 
@@ -92,19 +91,6 @@ func startPushTaskWorker(workerID int) {
 	}
 }
 
-// InitPttSystem 服务启动
-func InitPttSystem() {
-
-	for i := 0; i < 2; i++ {
-		go startPttConsumer(i)
-	}
-
-	for i := 0; i < 24; i++ {
-		go startPushTaskWorker(i)
-	}
-
-	StartFileCleanerService(common.BaseDir("voices"), 5*time.Minute)
-}
 
 // StartFileCleanerService ---
 func StartFileCleanerService(dirPath string, interval time.Duration) {

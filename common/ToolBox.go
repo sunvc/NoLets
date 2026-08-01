@@ -76,18 +76,79 @@ func TraceID(ctx *gin.Context) string {
 	return ""
 }
 
+// GetClientHost 安全且健壮地获取客户端访问的完整 Base URL (例如: https://example.com)
 func GetClientHost(c *gin.Context) string {
-	scheme := c.GetHeader("X-Forwarded-Proto")
-	if scheme == "" {
-		if c.Request.TLS != nil {
-			scheme = "https"
-		} else {
-			scheme = "http"
+	if c == nil || c.Request == nil {
+		return ""
+	}
+
+	scheme := getClientScheme(c)
+	host := getClientHostHeader(c)
+
+	return fmt.Sprintf("%s://%s", scheme, host)
+}
+
+// 获取协议类型 (http / https)
+func getClientScheme(c *gin.Context) string {
+	// 1. 优先从标准/常用 Header 获取
+	if proto := c.GetHeader("X-Forwarded-Proto"); proto != "" {
+		// 多层代理时 Header 格式可能为: "https, http"，取第一个
+		if idx := strings.IndexByte(proto, ','); idx != -1 {
+			proto = proto[:idx]
+		}
+		proto = strings.TrimSpace(strings.ToLower(proto))
+		if proto == "http" || proto == "https" {
+			return proto
 		}
 	}
 
-	host := c.Request.Host
-	return fmt.Sprintf("%s://%s", scheme, host)
+	// 2. 检查特定网关/云厂商的协议 Header (如 Cloudflare, AWS 等)
+	if cfVisitor := c.GetHeader("CF-Visitor"); cfVisitor != "" {
+		if strings.Contains(cfVisitor, `"scheme":"https"`) {
+			return "https"
+		}
+	}
+
+	// 3. 检查常规 TLS 连接
+	if c.Request.TLS != nil {
+		return "https"
+	}
+
+	return "http"
+}
+
+// 获取真实 Host (域名 + 可选端口)
+func getClientHostHeader(c *gin.Context) string {
+	var host string
+
+	// 1. 优先尝试 X-Forwarded-Host (反向代理保留的原域名)
+	if fHost := c.GetHeader("X-Forwarded-Host"); fHost != "" {
+		// 同理，多层代理可能返回 "example.com, internal-proxy.com"
+		if idx := strings.IndexByte(fHost, ','); idx != -1 {
+			fHost = fHost[:idx]
+		}
+		host = strings.TrimSpace(fHost)
+	}
+
+	// 2. 回退到 Request.Host
+	if host == "" {
+		host = c.Request.Host
+	}
+
+	// 3. 兜底回退到 URL.Host 或 Header 中的 Host
+	if host == "" && c.Request.URL != nil {
+		host = c.Request.URL.Host
+	}
+
+	// 清理多余空格及末尾斜杠，防止非法 Inject
+	host = strings.TrimRight(strings.TrimSpace(host), "/")
+
+	// 4. 防御极罕见的空 Host 情况
+	if host == "" {
+		host = "localhost"
+	}
+
+	return host
 }
 
 func IsFileInDirectory(dirPath, fileName string) (bool, error) {

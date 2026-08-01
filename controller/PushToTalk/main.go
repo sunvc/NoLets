@@ -67,7 +67,10 @@ func SyncChannels(user PttUser, newChannels []string) {
 	}
 	ChannelLock.Unlock()
 
-	// 广播增量事件(不含用户 name,客户端从 CloudKit 按 id 拉)
+	if len(joined) > 0 || len(left) > 0 {
+		markDirty()
+	}
+
 	nowMs := time.Now().UnixMilli()
 	userResp := PttUserResp{
 		ID:        user.ID,
@@ -75,6 +78,12 @@ func SyncChannels(user PttUser, newChannels []string) {
 		Longitude: user.Longitude,
 		Timestamp: nowMs,
 	}
+
+	joinedSet := make(map[string]struct{}, len(joined))
+	for _, ch := range joined {
+		joinedSet[ch] = struct{}{}
+	}
+
 	for _, chName := range joined {
 		Broadcast(chName, "", SubEvent{
 			Event:   EventJoin,
@@ -91,38 +100,15 @@ func SyncChannels(user PttUser, newChannels []string) {
 			Ts:      nowMs,
 		})
 	}
-}
 
-// BroadcastUpdate 位置心跳等场景下调用,把用户当前坐标推给它所有订阅频道的其它成员。
-// 频道成员是否变化不涉及,仅广播 update 事件。
-func BroadcastUpdate(user PttUser) {
-	GlobalUsers.Store(user.ID, user)
-
-	ChannelLock.RLock()
-	channels, ok := UserChannels[user.ID]
-	if !ok || len(channels) == 0 {
-		ChannelLock.RUnlock()
-		return
-	}
-	names := make([]string, 0, len(channels))
-	for name := range channels {
-		names = append(names, name)
-	}
-	ChannelLock.RUnlock()
-
-	nowMs := time.Now().UnixMilli()
-	userResp := PttUserResp{
-		ID:        user.ID,
-		Latitude:  user.Latitude,
-		Longitude: user.Longitude,
-		Timestamp: nowMs,
-	}
-	for _, chName := range names {
-		Broadcast(chName, user.ID, SubEvent{
-			Event:   EventUpdate,
-			Channel: chName,
-			User:    &userResp,
-			Ts:      nowMs,
-		})
+	if len(joined) == 0 && len(left) == 0 {
+		for _, chName := range newChannels {
+			Broadcast(chName, user.ID, SubEvent{
+				Event:   EventUpdate,
+				Channel: chName,
+				User:    &userResp,
+				Ts:      nowMs,
+			})
+		}
 	}
 }

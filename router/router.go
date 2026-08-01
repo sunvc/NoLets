@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/sunvc/NoLets/common"
 	"github.com/sunvc/NoLets/controller"
+	"github.com/sunvc/NoLets/controller/PushToTalk"
 )
 
 func SetupRouter(engine *gin.Engine) {
@@ -19,11 +20,10 @@ func SetupRouter(engine *gin.Engine) {
 
 	if common.LocalConfig.System.Voice {
 		ptt := router.Group("/ptt")
-		ptt.POST("connect", controller.PttConnect)
-		ptt.POST("/voice", controller.PttVoice)
-		ptt.GET("/voice/:name", controller.PttVoice)
-		ptt.POST("/subscribe", controller.PttSubscribe)
-		ptt.POST("/presence", controller.PttPresence)
+		ptt.POST("connect", PushToTalk.PttConnect)
+		ptt.POST("/voice", PushToTalk.PttVoice)
+		ptt.GET("/voice/:name", PushToTalk.PttVoice)
+		ptt.POST("/subscribe", PushToTalk.PttSubscribe)
 	}
 
 	// Used internally by the App

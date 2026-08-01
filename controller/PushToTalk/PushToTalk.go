@@ -1,4 +1,4 @@
-package controller
+package PushToTalk
 
 import (
 	"io"
@@ -11,44 +11,55 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/sunvc/NoLets/common"
-	PushToTalk2 "github.com/sunvc/NoLets/controller/PushToTalk"
 )
 
-// PushTask 代表发往单个用户的推送任务（第二级队列使用）
-
 func PttConnect(c *gin.Context) {
-
-	var req PushToTalk2.JoinParams
-
+	var req JoinParams
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(200, common.Failed(c, -1, err.Error(), nil))
 		return
 	}
-
-	// 频道成员维护完全由 SSE (/ptt/subscribe) 承担:
-	//   - subscribe 建连时 SyncChannels(channels) 广播 EventJoin
-	//   - subscribe 断开时 SyncChannels([]) 广播 EventLeave
-	// PttConnect 只做"读取当前快照"用途,不再改写 Channels/UserChannels,
-	// 避免与 SSE 重复写入导致重复 join/leave 广播。
-	if req.Token == "" {
-		c.JSON(200, common.Success(c, []PushToTalk2.JoinResponse{}))
+	if req.ID == "" {
+		c.JSON(200, common.Failed(c, -1, "id required", nil))
 		return
 	}
 
-	var response []PushToTalk2.JoinResponse
-	PushToTalk2.ChannelLock.RLock()
+	if req.Token == "" {
+		old, ok := UserChannels[req.ID]
+		if ok {
+			drop := make(map[string]struct{}, len(req.Channels))
+			for _, ch := range req.Channels {
+				drop[ch] = struct{}{}
+			}
+			remaining := make([]string, 0, len(old))
+			for ch := range old {
+				if _, isDrop := drop[ch]; !isDrop {
+					remaining = append(remaining, ch)
+				}
+			}
+			SyncChannels(req.PttUser, remaining)
+		}
+		c.JSON(200, common.Success(c, []JoinResponse{}))
+		return
+	}
+
+	req.PttUser.Timestamp = time.Now().UnixMilli()
+	SyncChannels(req.PttUser, req.Channels)
+
+	var response []JoinResponse
+	ChannelLock.RLock()
 	for _, channel := range req.Channels {
-		ch, ok := PushToTalk2.Channels[channel]
+		ch, ok := Channels[channel]
 		if !ok {
 			continue
 		}
-		response = append(response, PushToTalk2.JoinResponse{
+		response = append(response, JoinResponse{
 			Channel: channel,
 			Host:    req.Host,
 			Users:   ch.UserListResp(),
 		})
 	}
-	PushToTalk2.ChannelLock.RUnlock()
+	ChannelLock.RUnlock()
 
 	c.JSON(200, common.Success(c, response))
 }
@@ -88,9 +99,9 @@ func PttVoice(c *gin.Context) {
 			return
 		}
 
-		msg := PushToTalk2.VoiceMessage{
+		msg := VoiceMessage{
 			ID:        uuid.New().String(),
-			Host:      GetAbsoluteHost(c),
+			Host:      common.GetClientHost(c),
 			Channel:   channel,
 			FileName:  fileName,
 			Sender:    id,
@@ -98,7 +109,7 @@ func PttVoice(c *gin.Context) {
 			CreatedAt: time.Now().UnixMilli(),
 		}
 
-		PushToTalk2.MsgQueue <- msg
+		MsgQueue <- msg
 
 		c.JSON(200, common.Success(c, 0))
 		return
@@ -146,15 +157,4 @@ func veryPttTimestamp(timestamp string, ext int) bool {
 	}
 	seconds := time.Now().Sub(time.UnixMilli(ts)).Seconds()
 	return seconds < float64(ext)
-}
-
-func GetAbsoluteHost(c *gin.Context) string {
-	scheme := c.GetHeader("X-Forwarded-Proto")
-	if scheme == "" {
-		scheme = "http"
-		if c.Request.TLS != nil {
-			scheme = "https"
-		}
-	}
-	return scheme + "://" + c.Request.Host
 }

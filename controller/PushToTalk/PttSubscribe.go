@@ -1,4 +1,4 @@
-package controller
+package PushToTalk
 
 import (
 	"fmt"
@@ -8,7 +8,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/sunvc/NoLets/common"
-	PushToTalk2 "github.com/sunvc/NoLets/controller/PushToTalk"
 )
 
 // PttSubscribe 建立 SSE 长连接,向客户端持续推送 join/leave/update 事件。
@@ -19,7 +18,7 @@ import (
 // - 断开:客户端关闭或 60s 无写入错误即回收
 func PttSubscribe(c *gin.Context) {
 
-	var req PushToTalk2.JoinParams
+	var req JoinParams
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(200, common.Failed(c, -1, err.Error(), nil))
 		return
@@ -29,23 +28,12 @@ func PttSubscribe(c *gin.Context) {
 		return
 	}
 
-	startedAt := time.Now()
-	fmt.Printf("[SSE] open id=%s channels=%v\n", req.ID, req.Channels)
-	defer func() {
-		fmt.Printf("[SSE] close id=%s elapsed=%s\n", req.ID, time.Since(startedAt))
-	}()
-
-	// 尝试在 handler 起点就清 deadline —— 一定要在 WriteHeader 之前
 	rc := http.NewResponseController(c.Writer)
 	deadlineCleared := true
 	if err := rc.SetWriteDeadline(time.Time{}); err != nil {
-		fmt.Printf("[SSE] SetWriteDeadline err: %v\n", err)
 		deadlineCleared = false
 	}
-	if err := rc.SetReadDeadline(time.Time{}); err != nil {
-		fmt.Printf("[SSE] SetReadDeadline err: %v\n", err)
-	}
-	// 若清除失败,回退到"每次写前推 1 小时"的滑动窗口方式
+	_ = rc.SetReadDeadline(time.Time{})
 	pokeDeadline := func() {
 		if deadlineCleared {
 			return
@@ -53,7 +41,6 @@ func PttSubscribe(c *gin.Context) {
 		_ = rc.SetWriteDeadline(time.Now().Add(1 * time.Hour))
 	}
 
-	// SSE 通用 header
 	c.Writer.Header().Set("Content-Type", "text/event-stream")
 	c.Writer.Header().Set("Cache-Control", "no-cache, no-transform")
 	c.Writer.Header().Set("Connection", "keep-alive")
@@ -62,55 +49,47 @@ func PttSubscribe(c *gin.Context) {
 
 	flusher, ok := c.Writer.(http.Flusher)
 	if !ok {
-		fmt.Println("[SSE] Flusher unavailable")
 		return
 	}
 
-	// 1) 注册用户到频道并把订阅通道拿到手
-	PushToTalk2.SyncChannels(req.PttUser, req.Channels)
-
-	// 每个频道单独注册一个订阅通道,合并到一个 select
 	type subInfo struct {
 		channel string
-		ch      <-chan PushToTalk2.SubEvent
+		ch      <-chan SubEvent
 		cancel  func()
 	}
 	subs := make([]subInfo, 0, len(req.Channels))
 	for _, ch := range req.Channels {
-		evtCh, cancel := PushToTalk2.Subscribe(req.ID, ch)
+		evtCh, cancel := Subscribe(req.ID, ch)
 		subs = append(subs, subInfo{channel: ch, ch: evtCh, cancel: cancel})
 	}
-	// 客户端断开或函数返回时清理
 	defer func() {
 		for _, s := range subs {
 			s.cancel()
 		}
-		// 从 SyncChannels 视角移除用户
-		PushToTalk2.SyncChannels(req.PttUser, []string{})
 	}()
 
 	nowMs := time.Now().UnixMilli()
 
 	// 2) 每个订阅频道回一个 snapshot
 	pokeDeadline()
-	PushToTalk2.ChannelLock.RLock()
+	ChannelLock.RLock()
 	for _, chName := range req.Channels {
-		users := []PushToTalk2.PttUserResp{}
-		if ch, ok := PushToTalk2.Channels[chName]; ok {
+		users := []PttUserResp{}
+		if ch, ok := Channels[chName]; ok {
 			users = ch.UserListResp()
 		}
-		snap := PushToTalk2.SubEvent{
-			Event:   PushToTalk2.EventSnapshot,
+		snap := SubEvent{
+			Event:   EventSnapshot,
 			Channel: chName,
 			Users:   users,
 			Ts:      nowMs,
 		}
-		if !writeSSE(c.Writer, PushToTalk2.EventSnapshot, PushToTalk2.MarshalEvent(snap)) {
-			PushToTalk2.ChannelLock.RUnlock()
+		if !writeSSE(c.Writer, EventSnapshot, MarshalEvent(snap)) {
+			ChannelLock.RUnlock()
 			return
 		}
 	}
-	PushToTalk2.ChannelLock.RUnlock()
+	ChannelLock.RUnlock()
 	flusher.Flush()
 
 	// 3) 事件循环: fan-in 所有订阅通道 + 心跳 + 断开
@@ -120,7 +99,7 @@ func PttSubscribe(c *gin.Context) {
 	notify := c.Request.Context().Done()
 
 	// merged fan-in 用一个 goroutine 把多个 sub chan 汇到一个
-	merged := make(chan PushToTalk2.SubEvent, len(subs)*8+8)
+	merged := make(chan SubEvent, len(subs)*8+8)
 	stopFanIn := make(chan struct{})
 	for _, s := range subs {
 		go func(s subInfo) {
@@ -146,20 +125,16 @@ func PttSubscribe(c *gin.Context) {
 	for {
 		select {
 		case <-notify:
-			fmt.Printf("[SSE] client-cancel id=%s\n", req.ID)
 			return
 		case <-ticker.C:
-			// 心跳: 一条 comment line (': keepalive'), 客户端可忽略
 			pokeDeadline()
 			if _, err := io.WriteString(c.Writer, ": keepalive\n\n"); err != nil {
-				fmt.Printf("[SSE] keepalive write err id=%s: %v\n", req.ID, err)
 				return
 			}
 			flusher.Flush()
 		case evt := <-merged:
 			pokeDeadline()
-			if !writeSSE(c.Writer, evt.Event, PushToTalk2.MarshalEvent(evt)) {
-				fmt.Printf("[SSE] event write err id=%s event=%s\n", req.ID, evt.Event)
+			if !writeSSE(c.Writer, evt.Event, MarshalEvent(evt)) {
 				return
 			}
 			flusher.Flush()

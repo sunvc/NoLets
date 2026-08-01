@@ -37,7 +37,7 @@ var (
 	subscriberLock sync.RWMutex
 )
 
-const subscriberBuffer = 32
+const subscriberBuffer = 256
 
 // Subscribe 为指定用户在指定频道注册订阅,返回事件通道 & 一个用于取消的 close 函数。
 // 调用方 goroutine 负责从 ch 消费;若不消费,超过 subscriberBuffer 长度后的事件会被丢弃(记入日志)。
@@ -78,7 +78,6 @@ func Broadcast(channelName string, excludeUserID string, evt SubEvent) {
 		subscriberLock.RUnlock()
 		return
 	}
-	// 拷贝一份指针切片,快速释放读锁
 	targets := make([]*subscriber, 0, len(set))
 	for s := range set {
 		if s.userID == excludeUserID {
@@ -92,7 +91,6 @@ func Broadcast(channelName string, excludeUserID string, evt SubEvent) {
 		select {
 		case s.ch <- evt:
 		default:
-			// 队列满,丢弃这条事件让客户端下次快照兜底
 		}
 	}
 }
