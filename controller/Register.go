@@ -17,12 +17,12 @@ func Register(c *gin.Context) {
 	var device common.DeviceInfo
 
 	if err = c.BindJSON(&device); err != nil {
-		c.JSON(http.StatusOK, common.Failed(c, http.StatusBadRequest, "failed to get device token: %v", err))
+		c.JSON(http.StatusOK, common.Failed(c, http.StatusBadRequest, "%v", err))
 		return
 	}
 
 	if len(strings.TrimSpace(device.Token)) > 200 {
-		c.JSON(http.StatusOK, common.Failed(c, http.StatusBadRequest, "Invalid deviceToken", nil))
+		c.JSON(http.StatusOK, common.Failed(c, http.StatusBadRequest, "Invalid deviceToken"))
 		return
 	}
 	device.Key, err = database.DB.SaveDeviceTokenByKey(common.User{
@@ -48,10 +48,16 @@ func Register(c *gin.Context) {
 // Restore restores or checks a device Key.
 // It validates if a device Key is active, or restores/creates an empty device Key under admin privileges.
 func Restore(c *gin.Context) {
+
 	deviceKey := c.Param("deviceKey")
 
+	if !common.Admin(c) && len(deviceKey) != 22 {
+		c.JSON(http.StatusOK, common.Failed(c, http.StatusBadRequest, "Invalid deviceKey"))
+		return
+	}
+
 	if deviceKey == "" {
-		c.JSON(http.StatusOK, common.Failed(c, http.StatusBadRequest, "device key is empty", nil))
+		c.JSON(http.StatusOK, common.Failed(c, http.StatusBadRequest, "device key is empty"))
 		return
 	}
 
@@ -59,14 +65,12 @@ func Restore(c *gin.Context) {
 		c.JSON(http.StatusOK, common.Success(c, nil))
 		return
 	} else {
-		if common.Admin(c) {
-			_, err := database.DB.SaveDeviceTokenByKey(common.User{Key: deviceKey})
-			if err == nil {
-				c.JSON(http.StatusOK, common.Success(c, nil))
-				return
-			}
+		_, err := database.DB.SaveDeviceTokenByKey(common.User{Key: deviceKey})
+		if err != nil {
+			c.JSON(http.StatusOK, common.Failed(c, http.StatusBadRequest, "key save err"))
+			return
 		}
-		c.JSON(http.StatusOK, common.Failed(c, http.StatusBadRequest, "device key is not exist", nil))
+		c.JSON(http.StatusOK, common.Success(c, nil))
 	}
 
 }

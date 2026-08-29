@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/sunvc/NoLets/common"
 	"github.com/sunvc/apns2"
 	"github.com/sunvc/apns2/payload"
@@ -110,9 +111,9 @@ func Push(params *common.ParamsResult, pushType apns2.EPushType, token string) e
 
 }
 
-func BatchPush(params *common.ParamsResult, pushType apns2.EPushType) map[string]string {
+func BatchPush(params *common.ParamsResult, pushType apns2.EPushType) gin.H {
 
-	errors := make(map[string]string, 0)
+	errors := make(gin.H, 0)
 	var (
 		mu sync.Mutex
 		wg sync.WaitGroup

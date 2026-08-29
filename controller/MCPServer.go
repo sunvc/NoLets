@@ -73,11 +73,11 @@ func notifyHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallT
 		return mcp.NewToolResultError("Failed to resolve device token"), nil
 	}
 
-	if params.PushType == -1 {
+	if params.PushType == "0" {
 		return mcp.NewToolResultError("Not Notification BODY"), nil
 	}
 
-	if params.PushType == 2 {
+	if params.PushType == apns2.PushTypeLocation {
 		if errs := push.LocationPush(params); len(errs) > 0 {
 			return mcp.NewToolResultError(fmt.Sprintf("Failed to send location push: %v", errs)), nil
 		}
@@ -90,18 +90,13 @@ func notifyHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallT
 		}, "ok"), nil
 	}
 
-	pushType := apns2.PushTypeAlert
-	if params.PushType == 0 {
-		pushType = apns2.PushTypeBackground
-	}
-
-	if errs := push.BatchPush(params, pushType); len(errs) > 0 {
+	if errs := push.BatchPush(params, params.PushType); len(errs) > 0 {
 		return mcp.NewToolResultError(fmt.Sprintf("Failed to send notification: %v", errs)), nil
 	}
 
 	return mcp.NewToolResultStructured(map[string]any{
 		"status":       "ok",
-		"pushType":     mcpPushTypeName(pushType),
+		"pushType":     mcpPushTypeName(params.PushType),
 		"messageID":    params.GetString(common.ID),
 		"resolvedKeys": params.Keys,
 		"userCount":    len(params.Users),
@@ -354,11 +349,11 @@ func getCommonToolOpts(deviceKey string) []mcp.ToolOption {
 			mcp.Description("Custom callback value forwarded to the client"),
 		),
 
-		mcp.WithNumber(common.TTLPARAM,
+		mcp.WithNumber(common.TTL,
 			mcp.Description("Time to live for the notification payload"),
 		),
 
-		mcp.WithString(common.REPLYPARAM,
+		mcp.WithString(common.REPLY,
 			mcp.Description("Reply text or reply payload forwarded to the client"),
 		),
 	}

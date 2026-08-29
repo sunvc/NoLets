@@ -185,30 +185,24 @@ func IsFileInDirectory(dirPath, fileName string) (bool, error) {
 }
 
 func FilterShortStrings(input []string, minNumber, maxNumber int) []string {
-	var result []string
+	result := make(map[string]struct{})
+
 	for _, s := range input {
 		if len(s) >= minNumber && len(s) <= maxNumber {
-			result = append(result, s)
+			result[s] = struct{}{}
 		}
 	}
-	return result
+
+	output := make([]string, 0, len(result))
+	for s := range result {
+		output = append(output, s)
+	}
+
+	return output
 }
 
 func UserID(name ...string) string {
 	return shortuuid.NewWithNamespace(strings.Join(name, ""))
-}
-
-func InterfaceSliceToStringSlice(input []interface{}) []string {
-	result := make([]string, 0, len(input))
-	for _, v := range input {
-		if str, ok := v.(string); ok {
-			result = append(result, str)
-		} else {
-			// If the type is not string, you can choose to ignore or report an error
-			// Here we choose to ignore non-string types
-		}
-	}
-	return result
 }
 
 func Decrypt(signText string, key string) (string, error) {

@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/sunvc/apns2"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
 )
 
@@ -17,7 +18,7 @@ type ParamsResult struct {
 	Params   *orderedmap.OrderedMap[string, interface{}]
 	Users    []User
 	Keys     []string
-	PushType int
+	PushType apns2.EPushType
 }
 
 // Get parameter value
@@ -78,26 +79,7 @@ func NewParamsResult(c *gin.Context) *ParamsResult {
 	main.HandlerParamsToMapOrder(c)
 	main.PushType = ParamsNanAndDefault(main)
 
-	var resultKeys []string
-
-	if keys, ok := main.Params.Get(DEVICEKEYS); ok {
-		if vals, oka := keys.([]interface{}); oka {
-			resultKeys = InterfaceSliceToStringSlice(vals)
-		}
-	}
-
-	if key, ok := main.Params.Get(DEVICEKEY); ok {
-		if val, oka := key.(string); oka {
-			resultKeys = append(resultKeys, strings.Split(val, ",")...)
-		}
-	}
-
-	resultKeys = FilterShortStrings(resultKeys, 5, 64)
-	main.Keys = Unique[string](resultKeys)
-
-	if len(main.Keys) > LocalConfig.System.MaxDeviceKeyArrLength {
-		main.Keys = main.Keys[:LocalConfig.System.MaxDeviceKeyArrLength]
-	}
+	main.Keys = FilterShortStrings(main.Keys, 5, 64)
 
 	var users []User
 	if token, ok := main.Params.Get(DEVICETOKEN); ok {
@@ -130,9 +112,9 @@ func (p *ParamsResult) HandlerParamsToMapOrder(c *gin.Context) {
 	getDeviceKey := func(value string) {
 		deviceKeys := strings.Split(value, ",")
 		if len(deviceKeys) > 1 {
-			result.Set(DEVICEKEYS, deviceKeys)
+			p.Keys = append(p.Keys, deviceKeys...)
 		} else {
-			result.Set(DEVICEKEY, value)
+			p.Keys = append(p.Keys, value)
 		}
 	}
 
@@ -160,7 +142,7 @@ func (p *ParamsResult) HandlerParamsToMapOrder(c *gin.Context) {
 		for key, values := range params {
 			lowKey := p.NormalizeKey(key)
 			if len(values) > 0 {
-				if lowKey == DEVICEKEY {
+				if lowKey == DEVICEKEY || lowKey == DEVICEKEYS {
 					keys = append(keys, values...)
 				} else {
 					result.Set(lowKey, values[0])
@@ -170,11 +152,7 @@ func (p *ParamsResult) HandlerParamsToMapOrder(c *gin.Context) {
 		}
 
 		if keysNum := len(keys); keysNum > 0 {
-			if keysNum == 1 {
-				result.Set(DEVICEKEY, keys[0])
-			} else {
-				result.Set(DEVICEKEYS, keys)
-			}
+			p.Keys = append(p.Keys, keys...)
 		}
 	}
 
@@ -258,7 +236,7 @@ func ConvenientParamsHandler(result *orderedmap.OrderedMap[string, interface{}])
 	}
 }
 
-func ParamsNanAndDefault(paramsResult *ParamsResult) (resultType int) {
+func ParamsNanAndDefault(paramsResult *ParamsResult) (resultType apns2.EPushType) {
 	get := func(key string) bool {
 		v, ok := paramsResult.Params.Get(key)
 		if !ok || v == nil {
@@ -293,13 +271,13 @@ func ParamsNanAndDefault(paramsResult *ParamsResult) (resultType int) {
 	// ---- resultType logic ----
 	switch {
 	case location:
-		resultType = 2
+		resultType = apns2.PushTypeLocation
 	case contentNan && !idNan:
-		resultType = 0
+		resultType = apns2.PushTypeBackground
 	case !contentNan:
-		resultType = 1
+		resultType = apns2.PushTypeAlert
 	default:
-		resultType = -1
+		resultType = "0"
 		return
 	}
 

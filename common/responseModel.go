@@ -1,6 +1,7 @@
 package common
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -17,23 +18,29 @@ type BaseResp struct {
 
 // Success creates a successful response (HTTP 200) with optional data.
 func Success(c *gin.Context, data interface{}) BaseResp {
-	return BaseRes(TraceID(c), 200, "success", data)
+	return BaseResp{
+		Code:      200,
+		Message:   "success",
+		Data:      data,
+		Timestamp: DateNow().Unix(),
+		TraceID:   TraceID(c),
+	}
 }
 
 // Failed creates a failed response with the specified error code and formatted message.
-func Failed(c *gin.Context, code int, message string, args interface{}) BaseResp {
-	return BaseRes(TraceID(c), code, message, args)
-}
-
-// BaseRes creates a custom response with the specified status code, message, and optional data.
-func BaseRes(id string, code int, message string, data interface{}) BaseResp {
-
+func Failed(c *gin.Context, code int, format string, args ...any) BaseResp {
+	msg := func() string {
+		if len(args) > 0 {
+			return fmt.Sprintf(format, args...)
+		}
+		return format
+	}()
 	return BaseResp{
 		Code:      code,
-		Message:   message,
-		Data:      data,
+		Message:   msg,
+		Data:      nil,
 		Timestamp: DateNow().Unix(),
-		TraceID:   id,
+		TraceID:   TraceID(c),
 	}
 }
 

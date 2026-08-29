@@ -16,11 +16,11 @@ import (
 func PttConnect(c *gin.Context) {
 	var req JoinParams
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(200, common.Failed(c, -1, err.Error(), nil))
+		c.JSON(200, common.Failed(c, -1, "%v", err.Error()))
 		return
 	}
 	if req.ID == "" {
-		c.JSON(200, common.Failed(c, -1, "id required", nil))
+		c.JSON(200, common.Failed(c, -1, "id required"))
 		return
 	}
 
@@ -71,31 +71,31 @@ func PttVoice(c *gin.Context) {
 		fileName := c.GetHeader("X-PFA")
 
 		if fileName == "" {
-			c.JSON(200, common.Failed(c, -1, "upload file error", nil))
+			c.JSON(200, common.Failed(c, -1, "upload file error"))
 			return
 		}
 
 		id, channel, timestamp := getUserData(fileName)
 
 		if !veryPttTimestamp(timestamp, 60) {
-			c.JSON(200, common.Failed(c, -1, "Error DATA!", nil))
+			c.JSON(200, common.Failed(c, -1, "Error DATA!"))
 			return
 		}
 
-		savePath := filepath.Join("data", "voices", fileName)
+		savePath := common.BaseDir("voices", fileName)
 
 		file, err := os.Create(savePath)
 		defer func() { _ = file.Close() }()
 
 		if err != nil {
-			c.JSON(200, common.Failed(c, -1, err.Error(), nil))
+			c.JSON(200, common.Failed(c, -1, "%v", err.Error()))
 			return
 		}
 
 		_, err = io.Copy(file, c.Request.Body)
 
 		if err != nil {
-			c.JSON(200, common.Failed(c, -1, err.Error(), nil))
+			c.JSON(200, common.Failed(c, -1, "%v", err.Error()))
 			return
 		}
 
@@ -135,7 +135,7 @@ func PttVoice(c *gin.Context) {
 		return
 	}
 
-	c.JSON(200, common.Failed(c, -1, "Error Method", nil))
+	c.JSON(200, common.Failed(c, -1, "Error Method"))
 
 }
 

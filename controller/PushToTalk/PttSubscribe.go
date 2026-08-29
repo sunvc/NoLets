@@ -20,11 +20,11 @@ func PttSubscribe(c *gin.Context) {
 
 	var req JoinParams
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(200, common.Failed(c, -1, err.Error(), nil))
+		c.JSON(200, common.Failed(c, -1, "%v", err.Error()))
 		return
 	}
 	if req.ID == "" || len(req.Channels) == 0 {
-		c.JSON(200, common.Failed(c, -1, "id/channels required", nil))
+		c.JSON(200, common.Failed(c, -1, "id/channels required"))
 		return
 	}
 
@@ -74,7 +74,7 @@ func PttSubscribe(c *gin.Context) {
 	pokeDeadline()
 	ChannelLock.RLock()
 	for _, chName := range req.Channels {
-		users := []PttUserResp{}
+		var users []PttUserResp
 		if ch, ok := Channels[chName]; ok {
 			users = ch.UserListResp()
 		}

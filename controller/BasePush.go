@@ -16,26 +16,48 @@ func BasePush(c *gin.Context) {
 
 	result := common.NewParamsResult(c)
 
-	if result.PushType == 2 {
-		if len(result.Users) <= 0 {
-			for _, key := range result.Keys {
-				if len(key) > 5 {
-					if user, err := database.DB.DeviceTokenByKey(key); err == nil {
-						result.Users = append(result.Users, *user)
-					}
+	if result.PushType == "0" {
+		c.JSON(http.StatusOK, common.Failed(c, http.StatusBadRequest, "Incorrect Format"))
+		return
+	}
 
+	for _, key := range result.Keys {
+		if len(key) > 5 {
+			if user, err := database.DB.DeviceTokenByKey(key); err == nil {
+				result.Users = append(result.Users, *user)
+			}
+
+		}
+	}
+
+	if name, ok := result.Params.Get(common.PUSHGROUPNAME); ok {
+		if nameStr, bok := name.(string); bok {
+			users, err := database.DB.DeviceTokenByGroup(nameStr)
+			if err == nil && len(users) > 0 {
+				for _, user := range users {
+					result.Users = append(result.Users, *user)
 				}
 			}
 		}
-		result.Users = common.UserUnique(result.Users)
+	}
+
+	result.Users = common.UserUnique(result.Users)
+
+	if !common.Admin(c) {
+		if len(result.Users) > common.LocalConfig.System.MaxDeviceKeyArrLength {
+			result.Users = result.Users[:common.LocalConfig.System.MaxDeviceKeyArrLength]
+		}
+	}
+
+	if result.PushType == apns2.PushTypeLocation {
 
 		if len(result.Users) <= 0 {
-			c.JSON(http.StatusOK, common.Failed(c, http.StatusBadRequest, "Failed to get device token", nil))
+			c.JSON(http.StatusOK, common.Failed(c, http.StatusBadRequest, "failed to get device token"))
 			return
 		}
 
 		if err := push.LocationPush(result); len(err) > 0 {
-			c.JSON(http.StatusOK, common.Failed(c, http.StatusBadRequest, "Failed to push location: ", err))
+			c.JSON(http.StatusOK, common.Failed(c, http.StatusBadRequest, "failed to push location: %v", err))
 			return
 		}
 
@@ -43,66 +65,13 @@ func BasePush(c *gin.Context) {
 		return
 	}
 
-	if result.PushType == -1 {
-		if len(result.Keys) > 0 {
-			deviceKey := result.Keys[0]
-			token, err := database.DB.DeviceTokenByKey(deviceKey)
-			if err != nil {
-				c.JSON(http.StatusOK, common.Failed(c, http.StatusInternalServerError, "failed to get device token: %v", err))
-				return
-			}
-			c.JSON(http.StatusOK, common.Success(c, token))
-			return
-		}
-		c.JSON(http.StatusOK, common.Failed(c, http.StatusBadRequest, "Incorrect Format", nil))
+	if len(result.Users) <= 0 {
+		c.JSON(http.StatusOK, common.Failed(c, http.StatusBadRequest, "failed to get device token"))
 		return
 	}
 
-	if len(result.Users) <= 0 {
-		for _, key := range result.Keys {
-			if len(key) > 5 {
-				if user, err := database.DB.DeviceTokenByKey(key); err == nil {
-					result.Users = append(result.Users, *user)
-				}
-
-			}
-		}
-		result.Users = common.UserUnique(result.Users)
-
-		if common.Admin(c) {
-
-			if name, ok := result.Params.Get(common.PUSHGROUPNAME); ok {
-				if nameStr, bok := name.(string); bok {
-					users, err := database.DB.DeviceTokenByGroup(nameStr)
-					var tokens []common.User
-					for _, user := range users {
-						tokens = append(tokens, *user)
-					}
-					tokens = common.UserUnique(tokens)
-					if err == nil && len(tokens) > 0 {
-						result.Users = append(result.Users, tokens...)
-					}
-				}
-
-			}
-		}
-	}
-
-	if len(result.Users) <= 0 {
-		c.JSON(http.StatusOK, common.Failed(c, http.StatusBadRequest, "Failed to get device token", nil))
-		return
-	}
-
-	pushType := func() apns2.EPushType {
-		// If title, subtitle, and body are all empty, set silent push mode
-		if result.PushType == 0 {
-			return apns2.PushTypeBackground
-		}
-		return apns2.PushTypeAlert
-	}()
-
-	if err := push.BatchPush(result, pushType); err != nil {
-		c.JSON(http.StatusOK, common.Failed(c, http.StatusInternalServerError, "push failed: %v", err))
+	if errs := push.BatchPush(result, result.PushType); len(errs) > 0 {
+		c.JSON(http.StatusOK, common.Failed(c, http.StatusInternalServerError, "push failed: %v", errs))
 		return
 	}
 

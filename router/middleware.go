@@ -81,7 +81,7 @@ func GCMDecryptMiddleware() gin.HandlerFunc {
 
 		userAgent := c.GetHeader(common.HEADERUSERAGENT)
 		if !strings.HasPrefix(strings.ToLower(userAgent), strings.ToLower(common.APPNAME)) {
-			c.AbortWithStatusJSON(http.StatusOK, common.Failed(c, http.StatusUnauthorized, "SB", nil))
+			c.AbortWithStatusJSON(http.StatusOK, common.Failed(c, http.StatusUnauthorized, "SB"))
 			return
 		}
 
@@ -99,7 +99,6 @@ func GCMDecryptMiddleware() gin.HandlerFunc {
 				c,
 				http.StatusUnauthorized,
 				"missing signature",
-				nil,
 			))
 
 			log.Println("missing signature")
@@ -112,7 +111,7 @@ func GCMDecryptMiddleware() gin.HandlerFunc {
 			c.AbortWithStatusJSON(http.StatusOK, common.Failed(
 				c,
 				http.StatusUnauthorized,
-				"missing signature",
+				"%v",
 				err,
 			))
 			log.Println("Signature failed！err1:", err)
@@ -125,7 +124,7 @@ func GCMDecryptMiddleware() gin.HandlerFunc {
 			c.AbortWithStatusJSON(http.StatusOK, common.Failed(
 				c,
 				http.StatusUnauthorized,
-				"missing signature",
+				"%v",
 				err,
 			))
 			log.Println("Signature failed！err2:", err)
@@ -138,7 +137,6 @@ func GCMDecryptMiddleware() gin.HandlerFunc {
 				c,
 				http.StatusUnauthorized,
 				"missing signature",
-				nil,
 			))
 			log.Println("Signature failed！timestamp:", timestampStr)
 			return

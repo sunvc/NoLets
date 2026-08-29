@@ -12,10 +12,10 @@ import (
 )
 
 type persistState struct {
-	SavedAt      int64                        `json:"saved_at"`
-	Channels     map[string][]string          `json:"channels"`
-	UserChannels map[string][]string          `json:"user_channels"`
-	Users        map[string]PttUser           `json:"users"`
+	SavedAt      int64               `json:"saved_at"`
+	Channels     map[string][]string `json:"channels"`
+	UserChannels map[string][]string `json:"user_channels"`
+	Users        map[string]PttUser  `json:"users"`
 }
 
 var (
@@ -29,7 +29,7 @@ var (
 )
 
 func InitPttSystem() {
-	persistPath = filepath.Join(common.BaseDir("data"), "ptt_state.json")
+	persistPath = common.BaseDir("ptt_state.json")
 	loadState()
 
 	for i := 0; i < 2; i++ {

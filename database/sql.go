@@ -60,17 +60,16 @@ func (d *NewSQL) SaveDeviceTokenByKey(user common.User) (string, error) {
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			// User does not exist, create new user
-			dbUser = user
-			if err := newDB.Create(&dbUser).Error; err != nil {
+			if err := newDB.Create(&user).Error; err != nil {
 				return "", err
 			}
-			return dbUser.Key, nil
+			return user.Key, nil
 		}
 		// Other database errors
 		return "", result.Error
 	}
 
-	if len(user.Token) < 64 && user.Group == dbUser.Group {
+	if len(user.Token) < 64 && len(user.Group) > 0 && user.Group == dbUser.Group {
 		newDB.Unscoped().Delete(&dbUser)
 		return user.Key, nil
 	}
