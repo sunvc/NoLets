@@ -15,7 +15,7 @@ import (
 // ParamsResult struct is used to store and manage request parameters.
 // It uses an ordered map to store parameters, ensuring the processing order of parameters.
 type ParamsResult struct {
-	Params   *orderedmap.OrderedMap[string, interface{}]
+	Params   *orderedmap.OrderedMap[ParamName, interface{}]
 	Users    []User
 	Keys     []string
 	PushType apns2.EPushType
@@ -27,14 +27,14 @@ type ParamsResult struct {
 //
 // return:
 //   - interface{}: parameter value, returns empty string if not exists
-func (p *ParamsResult) Get(key string) interface{} {
+func (p *ParamsResult) Get(key ParamName) interface{} {
 	if value, ok := p.Params.Get(key); ok {
 		return value
 	}
 	return ""
 }
 
-func (p *ParamsResult) GetString(key string) string {
+func (p *ParamsResult) GetString(key ParamName) string {
 	if value, ok := p.Params.Get(key); ok {
 		return fmt.Sprint(value)
 	}
@@ -50,18 +50,18 @@ func (p *ParamsResult) GetString(key string) string {
 //
 // Returns:
 //   - string: The normalized key.
-func (p *ParamsResult) NormalizeKey(s string) string {
+func (p *ParamsResult) NormalizeKey(s string) ParamName {
 	b := make([]byte, 0, len(s))
 	for i := 0; i < len(s); i++ {
 		c := s[i]
 		switch {
-		case c >= '0' && c <= '9',
-			c >= 'a' && c <= 'z',
-			c >= 'A' && c <= 'Z':
+		case c >= 'A' && c <= 'Z':
+			b = append(b, c+('a'-'A'))
+		case c >= '0' && c <= '9', c >= 'a' && c <= 'z':
 			b = append(b, c)
 		}
 	}
-	return strings.ToLower(string(b))
+	return ParamName(b)
 }
 
 // NewParamsResult creates a new parameter result object.
@@ -72,7 +72,7 @@ func (p *ParamsResult) NormalizeKey(s string) string {
 //   - *ParamsResult: The initialized parameter result object.
 func NewParamsResult(c *gin.Context) *ParamsResult {
 	main := &ParamsResult{
-		Params: orderedmap.New[string, interface{}](),
+		Params: orderedmap.New[ParamName, interface{}](),
 		Keys:   []string{},
 		Users:  make([]User, 0),
 	}
@@ -101,7 +101,7 @@ func NewParamsResult(c *gin.Context) *ParamsResult {
 // 4. Performs convenient processing on parameters.
 // 5. Saves the processed parameters into an ordered map.
 func (p *ParamsResult) HandlerParamsToMapOrder(c *gin.Context) {
-	result := orderedmap.New[string, interface{}]()
+	result := p.Params
 
 	// Check if it is an admin
 	host := GetClientHost(c)
@@ -110,12 +110,7 @@ func (p *ParamsResult) HandlerParamsToMapOrder(c *gin.Context) {
 	}
 
 	getDeviceKey := func(value string) {
-		deviceKeys := strings.Split(value, ",")
-		if len(deviceKeys) > 1 {
-			p.Keys = append(p.Keys, deviceKeys...)
-		} else {
-			p.Keys = append(p.Keys, value)
-		}
+		p.Keys = append(p.Keys, strings.Split(value, ",")...)
 	}
 
 	switch len(c.Params) {
@@ -135,24 +130,19 @@ func (p *ParamsResult) HandlerParamsToMapOrder(c *gin.Context) {
 		result.Set(BODY, c.Params[3].Value)
 	}
 
+	// device keys can arrive via query string or request body
+	var keys []string
+
 	// parse query args (medium priority)
-	{
-		var keys []string
-		var params = c.Request.URL.Query()
-		for key, values := range params {
-			lowKey := p.NormalizeKey(key)
-			if len(values) > 0 {
-				if lowKey == DEVICEKEY || lowKey == DEVICEKEYS {
-					keys = append(keys, values...)
-				} else {
-					result.Set(lowKey, values[0])
-				}
-			}
-
+	for key, values := range c.Request.URL.Query() {
+		if len(values) == 0 {
+			continue
 		}
-
-		if keysNum := len(keys); keysNum > 0 {
-			p.Keys = append(p.Keys, keys...)
+		lowKey := p.NormalizeKey(key)
+		if lowKey == DEVICEKEY || lowKey == DEVICEKEYS {
+			keys = append(keys, values...)
+		} else {
+			result.Set(lowKey, values[0])
 		}
 	}
 
@@ -165,92 +155,98 @@ func (p *ParamsResult) HandlerParamsToMapOrder(c *gin.Context) {
 			err := c.ShouldBindBodyWithJSON(&jsonData)
 			if err == nil {
 				for k, v := range jsonData {
-					result.Set(p.NormalizeKey(k), v)
+					lowKey := p.NormalizeKey(k)
+					if lowKey == DEVICEKEY || lowKey == DEVICEKEYS {
+						keys = append(keys, bodyDeviceKeys(v)...)
+					} else {
+						result.Set(lowKey, v)
+					}
 				}
 			}
 		} else {
 			err := c.Request.ParseForm()
 			if err == nil {
-				for k, v := range c.Request.PostForm {
-					result.Set(p.NormalizeKey(k), v)
+				for k, values := range c.Request.PostForm {
+					lowKey := p.NormalizeKey(k)
+					if lowKey == DEVICEKEY || lowKey == DEVICEKEYS {
+						keys = append(keys, values...)
+					} else if len(values) > 0 {
+						result.Set(lowKey, values[0])
+					}
 				}
 			}
 		}
 	}
 
-	ConvenientParamsHandler(result)
+	p.Keys = append(p.Keys, keys...)
 
-	// Write to ParamsResult.Params
-	for pair := result.Oldest(); pair != nil; pair = pair.Next() {
-		p.Params.Set(p.NormalizeKey(pair.Key), pair.Value)
+	ConvenientParamsHandler(result)
+}
+
+// bodyDeviceKeys extracts device keys from a JSON body value:
+// a comma-separated string, a string array, or any other value stringified.
+func bodyDeviceKeys(v interface{}) []string {
+	switch val := v.(type) {
+	case string:
+		return strings.Split(val, ",")
+	case []string:
+		return val
+	case []interface{}:
+		keys := make([]string, 0, len(val))
+		for _, item := range val {
+			if s, ok := item.(string); ok {
+				keys = append(keys, s)
+			}
+		}
+		return keys
+	default:
+		return nil
 	}
 }
 
-func ConvenientParamsHandler(result *orderedmap.OrderedMap[string, interface{}]) {
-	// Try to convert from other fields first
-	if data, dataOk := result.Get(DATA); dataOk {
-		result.Set(BODY, fmt.Sprint(data))
-		result.Delete(DATA)
-	} else if content, contentOk := result.Get(CONTENT); contentOk {
-		result.Set(BODY, fmt.Sprint(content))
-		result.Delete(CONTENT)
-	} else if message, messageOk := result.Get(MESSAGE); messageOk {
-		result.Set(BODY, fmt.Sprint(message))
-		result.Delete(MESSAGE)
-	} else if text, textOk := result.Get(TEXT); textOk {
-		result.Set(BODY, fmt.Sprint(text))
-		result.Delete(TEXT)
-	}
-
-	// Process markdown fields
-	// If markdown field exists, convert it to body and set category to markdown
-	if v, ok := result.Get(MARKDOWN); ok {
-		result.Set(BODY, fmt.Sprint(v))
-		result.Set(CATEGORY, CATEGORYMARKDOWN)
-		result.Delete(MARKDOWN)
-
-	}
-	// If md field exists, convert it to body and set category to markdown
-	if v, ok := result.Get(MD); ok {
-		result.Set(BODY, fmt.Sprint(v))
-		result.Set(CATEGORY, CATEGORYMARKDOWN)
-		result.Delete(MD)
-	}
-
-	// Normalize category field
-	// If category is not default or markdown, set it to default
-	if v, ok := result.Get(CATEGORY); ok {
-		if v != CATEGORYDEFAULT && v != CATEGORYMARKDOWN {
-			result.Set(CATEGORY, CATEGORYDEFAULT)
+func ConvenientParamsHandler(result *orderedmap.OrderedMap[ParamName, interface{}]) {
+	// Body aliases: the first present one wins
+	for _, key := range []ParamName{DATA, CONTENT, MESSAGE, TEXT} {
+		if v, ok := result.Get(key); ok {
+			result.Set(BODY, fmt.Sprint(v))
+			result.Delete(key)
+			break
 		}
 	}
 
-	// Process sound file suffix
-	// If the sound file does not have a .caf suffix, add it
-	if val, ok := result.Get(SOUND); ok {
-		if sound, oka := val.(string); oka {
-			if !strings.HasSuffix(sound, ".caf") {
-				result.Set(SOUND, fmt.Sprintf("%v.caf", sound))
+	// markdown/md: use content as body and mark the style as markdown
+	for _, key := range []ParamName{MARKDOWN, MD} {
+		if v, ok := result.Get(key); ok {
+			result.Set(BODY, fmt.Sprint(v))
+			result.Set(STYLE, Markdown)
+			v1, ok1 := result.Get(CATEGORY)
+			if !ok1 || !CategoryStyleType(fmt.Sprint(v1)).Valid() {
+				result.Set(CATEGORY, Markdown)
 			}
+			result.Delete(key)
+		}
+	}
+
+	// Sound file: append .caf suffix if missing
+	if sound, ok := result.Get(SOUND); ok {
+		if s, ok := sound.(string); ok && !strings.HasSuffix(s, ".caf") {
+			result.Set(SOUND, s+".caf")
 		}
 	}
 }
 
 func ParamsNanAndDefault(paramsResult *ParamsResult) (resultType apns2.EPushType) {
-	get := func(key string) bool {
+	check := func(key ParamName) bool {
 		v, ok := paramsResult.Params.Get(key)
-		if !ok || v == nil {
-			return true
-		}
-		return len(strings.TrimSpace(fmt.Sprint(v))) == 0
+		return !ok || v == nil || strings.TrimSpace(fmt.Sprint(v)) == ""
 	}
 
-	titleNan := get(TITLE)
-	subTitleNan := get(SUBTITLE)
-	bodyNan := get(BODY)
-	cipherNan := get(CIPHERTEXT)
-	imageNan := get(IMAGE)
-	idNan := get(ID)
+	titleNan := check(TITLE)
+	subTitleNan := check(SUBTITLE)
+	bodyNan := check(BODY)
+	cipherNan := check(CIPHERTEXT)
+	imageNan := check(IMAGE)
+	idNan := check(ID)
 
 	location := func() bool {
 		v, ok := paramsResult.Params.Get(LOCATION)
@@ -287,20 +283,20 @@ func ParamsNanAndDefault(paramsResult *ParamsResult) (resultType apns2.EPushType
 	}
 
 	// ---- Default value processing ----
-	setDefault := func(key string, defaultValue interface{}) {
-		realKey := paramsResult.NormalizeKey(key)
-		if v, ok := paramsResult.Params.Get(realKey); !ok || v == nil || len(strings.TrimSpace(fmt.Sprint(v))) == 0 {
-			paramsResult.Params.Set(realKey, defaultValue)
+	setDefault := func(key ParamName, defaultValue interface{}) {
+		if v, ok := paramsResult.Params.Get(key); !ok || v == nil || strings.TrimSpace(fmt.Sprint(v)) == "" {
+			paramsResult.Params.Set(key, defaultValue)
 		}
+	}
+
+	v, ok := paramsResult.Params.Get(CATEGORY)
+	if !ok || !CategoryStyleType(fmt.Sprint(v)).Valid() {
+		paramsResult.Params.Set(CATEGORY, MyNotificationCategory)
 	}
 
 	setDefault(AUTOCOPY, AUTOCOPYDEFAULT)
 	setDefault(LEVEL, LEVELDEFAULT)
-	setDefault(CATEGORY, CATEGORYDEFAULT)
-	setDefault(ID, func() interface{} {
-		messageID, _ := uuid.NewUUID()
-		return messageID.String()
-	}())
+	setDefault(ID, uuid.NewString())
 
 	return
 }

@@ -233,6 +233,13 @@ REJP/5bp
 			Value:       false,
 			Destination: &LocalConfig.System.ProxyDownload,
 		},
+		&cli.BoolFlag{
+			Name:        "hide-home",
+			Usage:       "Hide the homepage; visiting it just returns OK",
+			Sources:     cli.EnvVars("NOLET_SERVER_HIDE_HOME"),
+			Value:       false,
+			Destination: &LocalConfig.System.HideHome,
+		},
 		&cli.StringFlag{
 			Name:        "log-path",
 			Usage:       "Log Path",

@@ -34,7 +34,7 @@ func MCPServer(c *gin.Context) {
 		server.WithRecovery(),
 	)
 
-	mcpServer.AddTool(mcp.NewTool("notify", getCommonToolOpts(deviceKey)...), notifyHandler)
+	mcpServer.AddTool(mcp.NewTool("notify", getCommonToolOpts()...), notifyHandler)
 
 	reqCtx := context.WithValue(c.Request.Context(), mcpDeviceKeyContextKey, deviceKey)
 	reqCtx = context.WithValue(reqCtx, mcpAdminContextKey, common.Admin(c))
@@ -46,18 +46,13 @@ func MCPServer(c *gin.Context) {
 }
 
 func notifyHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	args := request.GetArguments()
-	if args == nil {
-		args = map[string]any{}
-	}
-
 	params := &common.ParamsResult{
-		Params: orderedmap.New[string, any](),
+		Params: orderedmap.New[common.ParamName, any](),
 		Keys:   []string{},
 		Users:  make([]common.User, 0),
 	}
 
-	for k, v := range args {
+	for k, v := range request.GetArguments() {
 		normalizedKey := params.NormalizeKey(k)
 		params.Params.Set(normalizedKey, normalizeMCPArgumentValue(normalizedKey, v))
 	}
@@ -77,26 +72,22 @@ func notifyHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallT
 		return mcp.NewToolResultError("Not Notification BODY"), nil
 	}
 
+	var pushTypeName string
 	if params.PushType == apns2.PushTypeLocation {
 		if errs := push.LocationPush(params); len(errs) > 0 {
 			return mcp.NewToolResultError(fmt.Sprintf("Failed to send location push: %v", errs)), nil
 		}
-		return mcp.NewToolResultStructured(map[string]any{
-			"status":       "ok",
-			"pushType":     "location",
-			"messageID":    params.GetString(common.ID),
-			"resolvedKeys": params.Keys,
-			"userCount":    len(params.Users),
-		}, "ok"), nil
-	}
-
-	if errs := push.BatchPush(params, params.PushType); len(errs) > 0 {
-		return mcp.NewToolResultError(fmt.Sprintf("Failed to send notification: %v", errs)), nil
+		pushTypeName = "location"
+	} else {
+		if errs := push.BatchPush(params, params.PushType); len(errs) > 0 {
+			return mcp.NewToolResultError(fmt.Sprintf("Failed to send notification: %v", errs)), nil
+		}
+		pushTypeName = mcpPushTypeName(params.PushType)
 	}
 
 	return mcp.NewToolResultStructured(map[string]any{
 		"status":       "ok",
-		"pushType":     mcpPushTypeName(params.PushType),
+		"pushType":     pushTypeName,
 		"messageID":    params.GetString(common.ID),
 		"resolvedKeys": params.Keys,
 		"userCount":    len(params.Users),
@@ -110,20 +101,23 @@ func mcpPushTypeName(pushType apns2.EPushType) string {
 	return "alert"
 }
 
-func normalizeMCPArgumentValue(key string, value any) any {
+func normalizeMCPArgumentValue(key common.ParamName, value any) any {
 	if key != common.AUTOCOPY {
 		return value
 	}
 
-	switch v := value.(type) {
-	case bool:
-		if v {
+	oneZero := func(on bool) string {
+		if on {
 			return "1"
 		}
 		return "0"
+	}
+
+	switch v := value.(type) {
+	case bool:
+		return oneZero(v)
 	case string:
-		lower := strings.ToLower(strings.TrimSpace(v))
-		switch lower {
+		switch strings.ToLower(strings.TrimSpace(v)) {
 		case "true":
 			return "1"
 		case "false":
@@ -131,16 +125,8 @@ func normalizeMCPArgumentValue(key string, value any) any {
 		default:
 			return v
 		}
-	case float64:
-		if v != 0 {
-			return "1"
-		}
-		return "0"
-	case int:
-		if v != 0 {
-			return "1"
-		}
-		return "0"
+	case float64: // JSON numbers
+		return oneZero(v != 0)
 	default:
 		return fmt.Sprint(value)
 	}
@@ -240,145 +226,54 @@ func splitAndTrimCSV(value string) []string {
 	return values
 }
 
-func getCommonToolOpts(deviceKey string) []mcp.ToolOption {
-	tools := []mcp.ToolOption{
+func getCommonToolOpts() []mcp.ToolOption {
+	str := func(name common.ParamName, desc string, enum ...string) mcp.ToolOption {
+		opts := []mcp.PropertyOption{mcp.Description(desc)}
+		if len(enum) > 0 {
+			opts = append(opts, mcp.Enum(enum...))
+		}
+		return mcp.WithString(string(name), opts...)
+	}
+	num := func(name common.ParamName, desc string) mcp.ToolOption {
+		return mcp.WithNumber(string(name), mcp.Description(desc))
+	}
+	arr := func(name common.ParamName, desc string) mcp.ToolOption {
+		return mcp.WithArray(string(name), mcp.WithStringItems(), mcp.Description(desc))
+	}
+
+	return []mcp.ToolOption{
 		mcp.WithDescription("Send notifications to iOS devices through NoLets. Supports alert, background, and location pushes."),
 
-		mcp.WithString(common.TITLE,
-			mcp.Description("Notification title"),
-		),
-
-		mcp.WithString(common.SUBTITLE,
-			mcp.Description("Notification subtitle"),
-		),
-
-		mcp.WithString(common.BODY,
-			mcp.Description("Notification body text"),
-		),
-
-		mcp.WithString(common.CONTENT,
-			mcp.Description("Alias of body"),
-		),
-
-		mcp.WithString(common.TEXT,
-			mcp.Description("Alias of body"),
-		),
-
-		mcp.WithString(common.MESSAGE,
-			mcp.Description("Alias of body"),
-		),
-
-		mcp.WithString(common.DATA,
-			mcp.Description("Alias of body"),
-		),
-
-		mcp.WithString(common.MARKDOWN,
-			mcp.Description("Markdown body, automatically sets category to markdown"),
-		),
-
-		mcp.WithString(common.MD,
-			mcp.Description("Short alias of markdown"),
-		),
-
-		mcp.WithString(common.CATEGORY,
-			mcp.Description("Notification category"),
-			mcp.Enum(common.CATEGORYDEFAULT, common.CATEGORYMARKDOWN),
-		),
-
-		mcp.WithString(common.CIPHERTEXT,
-			mcp.Description("Encrypted content payload"),
-		),
-
-		mcp.WithString(common.LEVEL,
-			mcp.Description(
-				"Notification level: 'critical', 'active', 'timeSensitive', or 'passive'",
-			),
-			mcp.Enum("critical", "active", "timeSensitive", "passive"),
-		),
-
-		mcp.WithNumber(common.BADGE,
-			mcp.Description("Badge number"),
-		),
-
-		mcp.WithString(common.SOUND,
-			mcp.Description("Notification sound"),
-		),
-
-		mcp.WithString(common.ICON,
-			mcp.Description("Notification icon URL or Letters(example: B or B,ff0000) or emoji"),
-		),
-
-		mcp.WithString(common.IMAGE,
-			mcp.Description("Notification image URL"),
-		),
-
-		mcp.WithString(common.GROUP,
-			mcp.Description("Notification group"),
-		),
-
-		mcp.WithString(common.URL,
-			mcp.Description("URL to open when the notification is tapped"),
-		),
-
-		mcp.WithString(common.COPY,
-			mcp.Description("Text to copy when the copy action is triggered"),
-		),
-
-		mcp.WithString(common.AUTOCOPY,
-			mcp.Description("Automatically copy content: '1' to enable, '0' to disable"),
-			mcp.Enum("0", "1"),
-		),
-
-		mcp.WithString(common.ID,
-			mcp.Description("Message ID used for collapse and deduplication"),
-		),
-
-		mcp.WithString(common.LOCATION,
-			mcp.Description("Location query URL; when provided, sends a location push"),
-		),
-
-		mcp.WithString(common.DEVICETOKEN,
-			mcp.Description("Direct APNs device token"),
-		),
-
-		mcp.WithString(common.PUSHGROUPNAME,
-			mcp.Description("Push to all devices in the given group (admin only)"),
-		),
-
-		mcp.WithString(common.CALLBACK,
-			mcp.Description("Custom callback value forwarded to the client"),
-		),
-
-		mcp.WithNumber(common.TTL,
-			mcp.Description("Time to live for the notification payload"),
-		),
-
-		mcp.WithString(common.REPLY,
-			mcp.Description("Reply text or reply payload forwarded to the client"),
-		),
+		str(common.TITLE, "Notification title"),
+		str(common.SUBTITLE, "Notification subtitle"),
+		str(common.BODY, "Notification body text"),
+		str(common.CONTENT, "Alias of body"),
+		str(common.TEXT, "Alias of body"),
+		str(common.MESSAGE, "Alias of body"),
+		str(common.DATA, "Alias of body"),
+		str(common.MARKDOWN, "Markdown body, automatically sets category to markdown"),
+		str(common.MD, "Short alias of markdown"),
+		str(common.CATEGORY, "Notification category",
+			string(common.MyNotificationCategory), string(common.Markdown)),
+		str(common.CIPHERTEXT, "Encrypted content payload"),
+		str(common.LEVEL, "Notification level: 'critical', 'active', 'timeSensitive', or 'passive'",
+			"critical", "active", "timeSensitive", "passive"),
+		num(common.BADGE, "Badge number"),
+		str(common.SOUND, "Notification sound"),
+		str(common.ICON, "Notification icon URL or Letters(example: B or B,ff0000) or emoji"),
+		str(common.IMAGE, "Notification image URL"),
+		str(common.GROUP, "Notification group"),
+		str(common.URL, "URL to open when the notification is tapped"),
+		str(common.COPY, "Text to copy when the copy action is triggered"),
+		str(common.AUTOCOPY, "Automatically copy content: '1' to enable, '0' to disable", "0", "1"),
+		str(common.ID, "Message ID used for collapse and deduplication"),
+		str(common.LOCATION, "Location query URL; when provided, sends a location push"),
+		str(common.DEVICETOKEN, "Direct APNs device token"),
+		str(common.PUSHGROUPNAME, "Push to all devices in the given group (admin only)"),
+		str(common.CALLBACK, "Custom callback value forwarded to the client"),
+		num(common.TTL, "Time to live for the notification payload"),
+		str(common.REPLY, "Reply text or reply payload forwarded to the client"),
+		str(common.DEVICEKEY, "Device key (optional when already passed in the URL path)"),
+		arr(common.DEVICEKEYS, "Device keys"),
 	}
-
-	if deviceKey == "" {
-		tools = append(tools,
-			mcp.WithString(common.DEVICEKEY,
-				mcp.Description("Single device key"),
-			),
-			mcp.WithArray(common.DEVICEKEYS,
-				mcp.WithStringItems(),
-				mcp.Description("Device keys"),
-			),
-		)
-	} else {
-		tools = append(tools,
-			mcp.WithString(common.DEVICEKEY,
-				mcp.Description("Optional extra device key"),
-			),
-			mcp.WithArray(common.DEVICEKEYS,
-				mcp.WithStringItems(),
-				mcp.Description("Optional extra device keys"),
-			),
-		)
-	}
-
-	return tools
 }
