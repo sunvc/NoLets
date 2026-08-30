@@ -17,15 +17,22 @@ import (
 
 // CreateSSL generates a self-signed TLS certificate if it doesn't exist.
 func CreateSSL() {
+	if err := os.MkdirAll(common.BaseDir(), 0755); err != nil {
+		log.Fatalf("CreateSSL: failed to create data dir %s: %v", common.BaseDir(), err)
+	}
+
 	keyPath := common.BaseDir("key.pem")
 	certPath := common.BaseDir("cert.pem")
 
-	// If cert already exists, skip generation
-	if _, err := os.Stat(certPath); err == nil {
-		log.Printf("CreateSSL: cert already exists at %s, skip generation", certPath)
-		common.LocalConfig.System.Key = keyPath
-		common.LocalConfig.System.Cert = certPath
-		return
+	// Reuse the existing pair only when BOTH files are present; a missing
+	// key means regenerating, otherwise the server would later fail to load TLS.
+	if _, errCert := os.Stat(certPath); errCert == nil {
+		if _, errKey := os.Stat(keyPath); errKey == nil {
+			log.Printf("CreateSSL: cert already exists at %s, skip generation", certPath)
+			common.LocalConfig.System.Key = keyPath
+			common.LocalConfig.System.Cert = certPath
+			return
+		}
 	}
 
 	// Generate ECDSA private key
@@ -74,7 +81,8 @@ func CreateSSL() {
 
 	pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
 
-	keyOut, err := os.Create(keyPath)
+	// Private key: 0600, it must not be world-readable
+	keyOut, err := os.OpenFile(keyPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		panic(err)
 	}
@@ -87,7 +95,7 @@ func CreateSSL() {
 
 	pem.Encode(keyOut, &pem.Block{Type: "EC PRIVATE KEY", Bytes: marshaledKey})
 
-	println("CreateSSL: self-signed TLS certificate generated successfully")
+	log.Printf("CreateSSL: self-signed TLS certificate generated at %s", certPath)
 
 	common.LocalConfig.System.Key = keyPath
 	common.LocalConfig.System.Cert = certPath

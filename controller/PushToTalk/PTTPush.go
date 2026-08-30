@@ -66,7 +66,7 @@ func startPttConsumer(workerID int) {
 				case PushTaskQueue <- task: // 成功入队
 				default:
 					// 极端洪峰下，任务满载自动丢弃，保护 2 核机器不崩溃
-					fmt.Printf("[Drop] 推送任务队列已满，丢弃发往用户 %s 的分片\n", token)
+					fmt.Printf("[Drop] 推送任务队列已满，丢弃发往用户 %s 的分片\n", token.Token)
 				}
 			}
 		}()

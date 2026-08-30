@@ -17,7 +17,7 @@ func LocationPush(params *common.ParamsResult) map[string]string {
 	pl := payload.NewPayload()
 	// Add custom parameters
 	for pair := params.Params.Oldest(); pair != nil; pair = pair.Next() {
-		pl.Custom(pair.Key, pair.Value)
+		pl.Custom(string(pair.Key), pair.Value)
 	}
 	var wg sync.WaitGroup
 	var mu sync.Mutex
@@ -81,10 +81,10 @@ func Push(params *common.ParamsResult, pushType apns2.EPushType, token string) e
 
 	// Add custom parameters
 	for pair := params.Params.Oldest(); pair != nil; pair = pair.Next() {
-		if _, skip := common.SkipKeys[pair.Key]; skip {
+		if common.SkipParamNames(string(pair.Key)) {
 			continue
 		}
-		pl.Custom(pair.Key, pair.Value)
+		pl.Custom(string(pair.Key), pair.Value)
 	}
 
 	CLI := <-CLIENTS // Get a client from the pool

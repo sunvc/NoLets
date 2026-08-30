@@ -1,3 +1,69 @@
+#name: Build And Push
+#
+#on:
+#  push:
+#    tags:
+#      - 'v*'
+#
+#jobs:
+#  docker:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v5
+#
+#      - name: Set up QEMU
+#        uses: docker/setup-qemu-action@v3
+#
+#      - name: Set up Docker Buildx
+#        uses: docker/setup-buildx-action@v3
+#
+#      - name: Login to DockerHub
+#        uses: docker/login-action@v3
+#        with:
+#          username: ${{ secrets.DOCKER_USERNAME }}
+#          password: ${{ secrets.DOCKER_TOKEN }}
+#
+#      - name: Login to GitHub Container Registry
+#        uses: docker/login-action@v3
+#        with:
+#          registry: ghcr.io
+#          username: ${{ github.actor }}
+#          password: ${{ secrets.ACTION_TOKEN }}
+#
+#      - name: Set Environment Variables
+#        id: vars
+#        run: |
+#          echo "build_version=$(git describe --tags)" | tee -a $GITHUB_ENV >> $GITHUB_OUTPUT
+#          echo "build_date=$(date -u +'%Y-%m-%d-%H:%M:%S')" | tee -a $GITHUB_ENV >> $GITHUB_OUTPUT
+#          echo "commit_id=$(git rev-parse --short HEAD)" | tee -a $GITHUB_ENV >> $GITHUB_OUTPUT
+#
+#      - name: Debug Tags
+#        run: git tag -l
+#
+#      - name: Build and push
+#        id: docker_build
+#        uses: docker/build-push-action@v6
+#        with:
+#          context: .
+#          file: ./deploy/Dockerfile
+#          platforms: |
+#            linux/arm64
+#            linux/amd64
+#          build-args: |
+#            VERSION=${{ steps.vars.outputs.build_version }}
+#            BUILD_DATE=${{ steps.vars.outputs.build_date }}
+#            COMMIT_ID=${{ steps.vars.outputs.commit_id }}
+#          tags: |
+#            sunvc/nolet:latest
+#            sunvc/nolet:${{ env.build_version }}
+#            ghcr.io/sunvc/nolet:latest
+#            ghcr.io/sunvc/nolet:${{ env.build_version }}
+#          push: true
+#
+#      - name: Image digest
+#        run: echo ${{ steps.docker_build.outputs.digest }}
+
 name: Build And Push
 
 on:
@@ -5,45 +71,55 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   docker:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7.0.1
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4.3.0
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4.3.0
 
       - name: Login to DockerHub
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4.6.0
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.ACTION_TOKEN }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set Environment Variables
         id: vars
         run: |
-          echo "build_version=$(git describe --tags)" | tee -a $GITHUB_ENV >> $GITHUB_OUTPUT
-          echo "build_date=$(date -u +'%Y-%m-%d-%H:%M:%S')" | tee -a $GITHUB_ENV >> $GITHUB_OUTPUT
-          echo "commit_id=$(git rev-parse --short HEAD)" | tee -a $GITHUB_ENV >> $GITHUB_OUTPUT
+          build_version="$(git describe --tags --always --dirty)"
+          build_date="$(date -u +'%Y-%m-%d-%H:%M:%S')"
+          commit_id="$(git rev-parse --short HEAD)"
+          echo "build_version=$build_version" >> $GITHUB_ENV
+          echo "build_date=$build_date" >> $GITHUB_ENV
+          echo "commit_id=$commit_id" >> $GITHUB_ENV
+          echo "build_version=$build_version" >> $GITHUB_OUTPUT
+          echo "build_date=$build_date" >> $GITHUB_OUTPUT
+          echo "commit_id=$commit_id" >> $GITHUB_OUTPUT
 
       - name: Debug Tags
         run: git tag -l
 
       - name: Build and push
         id: docker_build
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7.3.0
         with:
           context: .
           file: ./deploy/Dockerfile
@@ -56,9 +132,9 @@ jobs:
             COMMIT_ID=${{ steps.vars.outputs.commit_id }}
           tags: |
             sunvc/nolet:latest
-            sunvc/nolet:${{ env.build_version }}
+            sunvc/nolet:${{ steps.vars.outputs.build_version }}
             ghcr.io/sunvc/nolet:latest
-            ghcr.io/sunvc/nolet:${{ env.build_version }}
+            ghcr.io/sunvc/nolet:${{ steps.vars.outputs.build_version }}
           push: true
 
       - name: Image digest

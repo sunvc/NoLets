@@ -9,7 +9,7 @@
 
 | App Store                                                                                                                                                             | Server Works  |
 |-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------|
-| [<img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Aero App" height="40">](https://apps.apple.com/us/app/id6615073345) | [![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/sunvc/NoLets-worker) |
+| [<img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="BravoPapa App" height="40">](https://apps.apple.com/us/app/id6615073345) | [![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/sunvc/NoLets-worker) |
 
 ### One-line Install (Recommended)
 
