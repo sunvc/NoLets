@@ -19,6 +19,11 @@ import (
 // 2. Generate QR code image
 func Home(c *gin.Context) {
 
+	if common.LocalConfig.System.HideHome {
+		c.String(http.StatusOK, "OK")
+		return
+	}
+
 	if strings.ToUpper(c.Request.Method) == "POST" {
 		token, expiry := push.GetToken()
 		c.JSON(http.StatusOK, gin.H{

@@ -3,6 +3,7 @@ package controller
 import (
 	"net/http"
 
+	"github.com/bytedance/sonic"
 	"github.com/gin-gonic/gin"
 	"github.com/sunvc/NoLets/common"
 	"github.com/sunvc/NoLets/database"
@@ -57,7 +58,8 @@ func BasePush(c *gin.Context) {
 		}
 
 		if err := push.LocationPush(result); len(err) > 0 {
-			c.JSON(http.StatusOK, common.Failed(c, http.StatusBadRequest, "failed to push location: %v", err))
+			data, _ := sonic.Marshal(err)
+			c.JSON(http.StatusOK, common.Failed(c, http.StatusBadRequest, "failed to push location: %v", string(data)))
 			return
 		}
 
@@ -71,7 +73,8 @@ func BasePush(c *gin.Context) {
 	}
 
 	if errs := push.BatchPush(result, result.PushType); len(errs) > 0 {
-		c.JSON(http.StatusOK, common.Failed(c, http.StatusInternalServerError, "push failed: %v", errs))
+		data, _ := sonic.Marshal(errs)
+		c.JSON(http.StatusOK, common.Failed(c, http.StatusInternalServerError, "push failed: %v", string(data)))
 		return
 	}
 

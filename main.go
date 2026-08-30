@@ -47,11 +47,6 @@ func main() {
 		Flags:   common.Flags(),
 		Authors: []any{"to@uuneo.com"},
 		Action: func(_ context.Context, command *cli.Command) error {
-			if common.LocalConfig.System.CustomHttps {
-				controller.CreateSSL()
-				common.LocalConfig.System.Addr = "0.0.0.0:8443"
-			}
-
 			if _, err := os.Stat(common.BaseDir()); os.IsNotExist(err) {
 				if err = os.MkdirAll(common.BaseDir(), 0755); err != nil {
 					log.Println(fmt.Sprintf("failed to create database storage dir(%s): %v", common.BaseDir(), err))
@@ -61,6 +56,17 @@ func main() {
 
 			if configPath := command.String("config"); configPath != "" {
 				common.LocalConfig.SetConfig(configPath)
+			}
+
+			// Custom HTTPS: self-sign a cert only if the user didn't supply one,
+			// and switch the default :8080 to :8443 only if the address wasn't customized.
+			if common.LocalConfig.System.CustomHttps {
+				if common.LocalConfig.System.Cert == "" && common.LocalConfig.System.Key == "" {
+					controller.CreateSSL()
+				}
+				if common.LocalConfig.System.Addr == "0.0.0.0:8080" {
+					common.LocalConfig.System.Addr = "0.0.0.0:8443"
+				}
 			}
 
 			common.SetDefaultVersionOrCommID(version, buildDate, commitID)
@@ -94,12 +100,13 @@ func main() {
 				cert, err := tls.LoadX509KeyPair(systemConfig.Cert, systemConfig.Key)
 
 				if err != nil {
-					log.Printf("failed to load TLS cert (cert=%s, key=%s): %v", systemConfig.Cert, systemConfig.Key, err)
-				} else {
-					tLSConfig = &tls.Config{
-						Certificates: []tls.Certificate{cert},
-						MinVersion:   tls.VersionTLS12,
-					}
+					// Fail closed: never silently serve plaintext HTTP where TLS was expected
+					log.Fatalf("failed to load TLS cert (cert=%s, key=%s): %v", systemConfig.Cert, systemConfig.Key, err)
+				}
+
+				tLSConfig = &tls.Config{
+					Certificates: []tls.Certificate{cert},
+					MinVersion:   tls.VersionTLS12,
 				}
 			}
 

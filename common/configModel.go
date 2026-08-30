@@ -42,6 +42,7 @@ type System struct {
 	CommitID              string        `mapstructure:"-" json:"-" yaml:"-" koanf:"-"`
 	CustomHttps           bool          `mapstructure:"-" json:"-" yaml:"-" koanf:"-"`
 	ProxyDownload         bool          `mapstructure:"proxyDownload" json:"proxyDownload" yaml:"proxyDownload" koanf:"proxyDownload"`
+	HideHome              bool          `mapstructure:"hideHome" json:"hideHome" yaml:"hideHome" koanf:"hideHome"`
 	LogPath               string        `mapstructure:"logPath" json:"logPath" yaml:"logPath" koanf:"logPath"`
 	ICPInfo               string        `mapstructure:"icp_info" json:"icp_info" yaml:"icp_info" koanf:"icp_info"`
 	TimeZone              string        `mapstructure:"time_zone" json:"time_zone" yaml:"time_zone" koanf:"time_zone"`
@@ -127,6 +128,7 @@ func (global *Config) SetConfig(configPath string) {
 		global.System.IdleTimeout = conf.System.IdleTimeout
 	}
 	global.System.Debug = conf.System.Debug
+	global.System.HideHome = conf.System.HideHome
 	if len(conf.System.Version) > 0 {
 		global.System.Version = conf.System.Version
 	}

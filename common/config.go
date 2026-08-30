@@ -34,6 +34,7 @@ var LocalConfig = &Config{
 		IdleTimeout:           10 * time.Second,
 		CustomHttps:           false,
 		ProxyDownload:         false,
+		HideHome:              false,
 		Debug:                 false,
 		Version:               "",
 		BuildDate:             "",
