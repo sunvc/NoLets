@@ -35,15 +35,15 @@ func Verification() gin.HandlerFunc {
 			user, pass, hasAuth := c.Request.BasicAuth()
 			if !hasAuth {
 				// If no Basic Auth, try to get from query parameters
-				user = c.Query(common.USERNAME)
-				pass = c.Query(common.PASSWORD)
+				user = c.Query(string(common.USERNAME))
+				pass = c.Query(string(common.PASSWORD))
 
 				if c.Request.Method == http.MethodPost {
 					if user == "" {
-						user = c.PostForm(common.USERNAME)
+						user = c.PostForm(string(common.USERNAME))
 					}
 					if pass == "" {
-						pass = c.PostForm(common.PASSWORD)
+						pass = c.PostForm(string(common.PASSWORD))
 					}
 				}
 			}
