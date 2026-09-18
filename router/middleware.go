@@ -2,6 +2,7 @@ package router
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -80,6 +81,7 @@ func GCMDecryptMiddleware() gin.HandlerFunc {
 		c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 512)
 
 		userAgent := c.GetHeader(common.HEADERUSERAGENT)
+		fmt.Println(userAgent)
 		if !strings.HasPrefix(strings.ToLower(userAgent), strings.ToLower(common.APPNAME)) {
 			c.AbortWithStatusJSON(http.StatusOK, common.Failed(c, http.StatusUnauthorized, "SB"))
 			return

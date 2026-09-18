@@ -17,7 +17,7 @@ func SetupRouter(engine *gin.Engine) {
 	router := engine.Group(common.LocalConfig.System.URLPrefix)
 	router.GET("/", controller.Home)
 	router.POST("/", controller.Home)
-	
+
 	if common.LocalConfig.System.Voice {
 		ptt := router.Group("/ptt")
 		ptt.POST("connect", PushToTalk.PttConnect)
@@ -36,6 +36,7 @@ func SetupRouter(engine *gin.Engine) {
 	wellKnowGroup := router.Group("/.well-known")
 	{
 		wellKnowGroup.GET("/apple-app-site-association", controller.AppleSite)
+		wellKnowGroup.GET("/applinking.json", controller.HarmonyOS)
 	}
 
 	// Register

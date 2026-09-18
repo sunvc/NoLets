@@ -41,6 +41,16 @@ func (p *ParamsResult) GetString(key ParamName) string {
 	return ""
 }
 
+func (p *ParamsResult) GetUser(mode OSType) []User {
+	var users []User
+	for _, user := range p.Users {
+		if user.OS == string(mode) {
+			users = append(users, user)
+		}
+	}
+	return users
+}
+
 // NormalizeKey normalizes the parameter key.
 // Main functions:
 // 1. Removes all symbols and spaces.

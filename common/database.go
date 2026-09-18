@@ -4,6 +4,13 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	// OSApple 苹果端，历史数据默认值
+	OSApple = "apple"
+	// OSHarmony 鸿蒙端
+	OSHarmony = "harmony"
+)
+
 type User struct {
 	gorm.Model
 	Key      string `gorm:"type:varchar(50);uniqueIndex;not null" json:"key"`
@@ -11,6 +18,8 @@ type User struct {
 	Talk     string `gorm:"type:varchar(255);" json:"talk,omitempty"`
 	Location string `gorm:"type:varchar(255);" json:"location,omitempty"`
 	Group    string `gorm:"type:varchar(255);column:user_group;" json:"group,omitempty"`
+	// OS 客户端平台，注册时按 User-Agent 判定；存量数据由列默认值补为 apple
+	OS string `gorm:"type:varchar(20);default:'apple'" json:"os,omitempty"`
 }
 
 func UserUnique(users []User) []User {

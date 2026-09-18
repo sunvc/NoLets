@@ -1,5 +1,14 @@
 package common
 
+import "strings"
+
+type OSType string
+
+const (
+	HARMONY OSType = "harmony"
+	APPLE   OSType = "apple"
+)
+
 type ParamName string
 
 const (
@@ -17,6 +26,7 @@ const (
 	CIPHERTEXT      ParamName = "ciphertext"    // ciphertext
 	IMAGE           ParamName = "image"         // image
 	ICON            ParamName = "icon"          // icon
+	CALL            ParamName = "call"          // 长铃声
 	URL             ParamName = "url"           // url
 	BODY            ParamName = "body"          // body
 	CONTENT         ParamName = "content"       // content (compatible)
@@ -99,6 +109,14 @@ const (
 const (
 	APPNAME = "NoLet"
 )
+
+// OSFromUA 按 User-Agent 判定客户端平台：包含 HarmonyOS 为鸿蒙端，其余按苹果端处理
+func OSFromUA(userAgent string) string {
+	if strings.Contains(strings.ToLower(userAgent), strings.ToLower("HarmonyOS")) {
+		return OSHarmony
+	}
+	return OSApple
+}
 
 var skipParamNames = map[ParamName]struct{}{
 	DEVICEKEY:   {},

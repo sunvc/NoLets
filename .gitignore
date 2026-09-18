@@ -50,3 +50,5 @@ Server/
 **/logs/
 
 logs/
+
+**/private.json

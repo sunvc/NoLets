@@ -54,6 +54,9 @@ func (d *NewSQL) SaveDeviceTokenByKey(user common.User) (string, error) {
 		// Generate new UUID
 		user.Key = common.UserID()
 	}
+	if user.OS == "" {
+		user.OS = common.OSApple
+	}
 
 	var dbUser common.User
 	result := newDB.Where("key = ?", user.Key).First(&dbUser)
@@ -78,6 +81,9 @@ func (d *NewSQL) SaveDeviceTokenByKey(user common.User) (string, error) {
 	dbUser.Token = user.Token
 	dbUser.Talk = user.Talk
 	dbUser.Location = user.Location
+	if user.OS != "" {
+		dbUser.OS = user.OS
+	}
 	if err := newDB.Save(&dbUser).Error; err != nil {
 		return "", err
 	}

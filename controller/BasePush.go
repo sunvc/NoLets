@@ -1,10 +1,13 @@
 package controller
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/bytedance/sonic"
 	"github.com/gin-gonic/gin"
+	"github.com/sunvc/NoLets/Harmony"
 	"github.com/sunvc/NoLets/common"
 	"github.com/sunvc/NoLets/database"
 	"github.com/sunvc/NoLets/push"
@@ -50,33 +53,44 @@ func BasePush(c *gin.Context) {
 		}
 	}
 
-	if result.PushType == apns2.PushTypeLocation {
+	var harmonyErr error
+	var appleError error
 
-		if len(result.Users) <= 0 {
-			c.JSON(http.StatusOK, common.Failed(c, http.StatusBadRequest, "failed to get device token"))
-			return
+	if users := result.GetUser(common.HARMONY); len(users) > 0 {
+		harmonyErr = Harmony.AutoPush(result)
+	}
+
+	if users := result.GetUser(common.APPLE); len(users) > 0 {
+		if result.PushType == apns2.PushTypeLocation {
+			if err := push.LocationPush(result); len(err) > 0 {
+				data, _ := sonic.Marshal(err)
+				appleError = errors.New(fmt.Sprintf("failed to push location: %v", string(data)))
+			}
+		} else {
+			if errs := push.BatchPush(result, result.PushType); len(errs) > 0 {
+				data, _ := sonic.Marshal(errs)
+				appleError = errors.New(fmt.Sprintf("push failed: %v", string(data)))
+			}
 		}
+	}
 
-		if err := push.LocationPush(result); len(err) > 0 {
-			data, _ := sonic.Marshal(err)
-			c.JSON(http.StatusOK, common.Failed(c, http.StatusBadRequest, "failed to push location: %v", string(data)))
-			return
-		}
-
-		c.JSON(http.StatusOK, common.Success(c, nil))
+	if harmonyErr != nil && appleError != nil {
+		c.JSON(http.StatusOK,
+			common.Failed(
+				c,
+				200,
+				"harmony: %v; apple: %v", harmonyErr.Error(), appleError.Error(),
+			),
+		)
+		return
+	} else if harmonyErr != nil {
+		c.JSON(http.StatusOK, common.Success(c, harmonyErr.Error()))
+		return
+	} else if appleError != nil {
+		c.JSON(http.StatusOK, common.Success(c, appleError.Error()))
 		return
 	}
 
-	if len(result.Users) <= 0 {
-		c.JSON(http.StatusOK, common.Failed(c, http.StatusBadRequest, "failed to get device token"))
-		return
-	}
+	c.JSON(http.StatusOK, common.Success(c, true))
 
-	if errs := push.BatchPush(result, result.PushType); len(errs) > 0 {
-		data, _ := sonic.Marshal(errs)
-		c.JSON(http.StatusOK, common.Failed(c, http.StatusInternalServerError, "push failed: %v", string(data)))
-		return
-	}
-
-	c.JSON(http.StatusOK, common.Success(c, nil))
 }

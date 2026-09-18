@@ -25,12 +25,16 @@ func Register(c *gin.Context) {
 		c.JSON(http.StatusOK, common.Failed(c, http.StatusBadRequest, "Invalid deviceToken"))
 		return
 	}
+	// 平台由 User-Agent 判定，不信任客户端 body
+	device.OS = common.OSFromUA(c.GetHeader(common.HEADERUSERAGENT))
+
 	device.Key, err = database.DB.SaveDeviceTokenByKey(common.User{
 		Key:      device.Key,
 		Token:    device.Token,
 		Talk:     device.Talk,
 		Location: device.Location,
 		Group:    device.Group,
+		OS:       device.OS,
 	})
 
 	if err != nil {
@@ -65,7 +69,10 @@ func Restore(c *gin.Context) {
 		c.JSON(http.StatusOK, common.Success(c, nil))
 		return
 	} else {
-		_, err := database.DB.SaveDeviceTokenByKey(common.User{Key: deviceKey})
+		_, err := database.DB.SaveDeviceTokenByKey(common.User{
+			Key: deviceKey,
+			OS:  common.OSFromUA(c.GetHeader(common.HEADERUSERAGENT)),
+		})
 		if err != nil {
 			c.JSON(http.StatusOK, common.Failed(c, http.StatusBadRequest, "key save err"))
 			return

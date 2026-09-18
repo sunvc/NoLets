@@ -93,7 +93,7 @@ func Flags() []cli.Flag {
 			Sources:     cli.EnvVars("NOLET_SIGN_KEY"),
 			Aliases:     []string{"sk"},
 			Destination: &LocalConfig.System.SignKey,
-			Value:       "",
+			Value:       "ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEF",
 		},
 		&cli.StringFlag{
 			Name:        "proxy-header",
@@ -237,6 +237,7 @@ REJP/5bp
 			Name:        "hide-home",
 			Usage:       "Hide the homepage; visiting it just returns OK",
 			Sources:     cli.EnvVars("NOLET_SERVER_HIDE_HOME"),
+			Aliases:     []string{"hh"},
 			Value:       false,
 			Destination: &LocalConfig.System.HideHome,
 		},
@@ -264,6 +265,71 @@ REJP/5bp
 				SynchronousFieldFile()
 				return cli.Exit("create success ...", 0)
 			},
+		},
+
+		// HarmonyOS Push Kit
+		&cli.StringFlag{
+			Name:        "hm-project-id",
+			Usage:       "HarmonyOS Push Kit project ID (AGC)",
+			Sources:     cli.EnvVars("NOLET_HM_PROJECT_ID"),
+			Destination: &LocalConfig.Harmony.ProjectID,
+			Value:       "",
+		},
+		&cli.StringFlag{
+			Name:        "hm-key-id",
+			Usage:       "HarmonyOS Push Kit key ID",
+			Sources:     cli.EnvVars("NOLET_HM_KEY_ID"),
+			Destination: &LocalConfig.Harmony.KeyID,
+			Value:       "",
+		},
+		&cli.StringFlag{
+			Name:        "hm-private-key",
+			Usage:       "HarmonyOS Push Kit private key (PEM or key file content)",
+			Sources:     cli.EnvVars("NOLET_HM_PRIVATE_KEY"),
+			Destination: &LocalConfig.Harmony.PrivateKey,
+			Value:       "",
+		},
+		&cli.StringFlag{
+			Name:        "hm-sub-account",
+			Usage:       "HarmonyOS Push Kit sub account",
+			Sources:     cli.EnvVars("NOLET_HM_SUB_ACCOUNT"),
+			Destination: &LocalConfig.Harmony.SubAccount,
+			Value:       "",
+		},
+		&cli.StringFlag{
+			Name:        "hm-auth-uri",
+			Usage:       "HarmonyOS OAuth 2.0 token auth URI",
+			Sources:     cli.EnvVars("NOLET_HM_AUTH_URI"),
+			Destination: &LocalConfig.Harmony.AuthURI,
+			Value:       "",
+		},
+		&cli.StringFlag{
+			Name:        "hm-token-uri",
+			Usage:       "HarmonyOS OAuth 2.0 token URI",
+			Sources:     cli.EnvVars("NOLET_HM_TOKEN_URI"),
+			Destination: &LocalConfig.Harmony.TokenURI,
+			Value:       "",
+		},
+		&cli.StringFlag{
+			Name:        "hm-auth-provider-cert-uri",
+			Usage:       "HarmonyOS auth provider cert URI",
+			Sources:     cli.EnvVars("NOLET_HM_AUTH_PROVIDER_CERT_URI"),
+			Destination: &LocalConfig.Harmony.AuthProviderCertURI,
+			Value:       "",
+		},
+		&cli.StringFlag{
+			Name:        "hm-client-cert-uri",
+			Usage:       "HarmonyOS client cert URI",
+			Sources:     cli.EnvVars("NOLET_HM_CLIENT_CERT_URI"),
+			Destination: &LocalConfig.Harmony.ClientCertURI,
+			Value:       "",
+		},
+		&cli.StringFlag{
+			Name:        "hm-client-id",
+			Usage:       "HarmonyOS OAuth 2.0 client ID",
+			Sources:     cli.EnvVars("NOLET_HM_CLIENT_ID"),
+			Destination: &LocalConfig.Harmony.ClientId,
+			Value:       "",
 		},
 	}
 }

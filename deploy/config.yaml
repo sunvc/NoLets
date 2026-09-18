@@ -30,7 +30,7 @@ system:
   importPath: ""
   icp_info: ""
   time_zone: ""
-  auths: []
+  auths: [ ]
 apple:
   apnsPrivateKey: |-
     -----BEGIN PRIVATE KEY-----
@@ -43,3 +43,13 @@ apple:
   keyID: BNY5GUGV38
   teamID: FUWV6U942Q
   develop: false
+harmony:
+  project_id: "",
+  key_id: "",
+  private_key: "",
+  sub_account: "",
+  auth_uri: "",
+  token_uri: "",
+  auth_provider_cert_uri: "",
+  client_cert_uri: ""
+

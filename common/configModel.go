@@ -1,18 +1,20 @@
 package common
 
 import (
-	"log"
+	"fmt"
 	"os"
 	"time"
 
+	"github.com/go-viper/mapstructure/v2"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/v2"
 )
 
 type Config struct {
-	System System `mapstructure:"system" json:"system" yaml:"system" koanf:"system"`
-	Apple  Apple  `mapstructure:"apple" json:"apple" yaml:"apple" koanf:"apple"`
+	System  System  `mapstructure:"system" json:"system" yaml:"system" koanf:"system"`
+	Apple   Apple   `mapstructure:"apple" json:"apple" yaml:"apple" koanf:"apple"`
+	Harmony Harmony `mapstructure:"harmony" json:"harmony" yaml:"harmony"`
 }
 
 type System struct {
@@ -57,106 +59,39 @@ type Apple struct {
 	Develop        bool   `mapstructure:"develop" json:"develop" yaml:"develop" koanf:"develop"`
 }
 
-func (global *Config) SetConfig(configPath string) {
+type Harmony struct {
+	ProjectID           string `mapstructure:"project_id" json:"project_id" yaml:"project_id" koanf:"project_id"`
+	KeyID               string `mapstructure:"key_id" json:"key_id" yaml:"key_id" koanf:"key_id"`
+	PrivateKey          string `mapstructure:"private_key" json:"private_key" yaml:"private_key" koanf:"private_key"`
+	SubAccount          string `mapstructure:"sub_account" json:"sub_account" yaml:"sub_account" koanf:"sub_account"`
+	AuthURI             string `mapstructure:"auth_uri" json:"auth_uri" yaml:"auth_uri" koanf:"auth_uri"`
+	TokenURI            string `mapstructure:"token_uri" json:"token_uri" yaml:"token_uri" koanf:"token_uri"`
+	AuthProviderCertURI string `mapstructure:"auth_provider_cert_uri" json:"auth_provider_cert_uri" yaml:"auth_provider_cert_uri" koanf:"auth_provider_cert_uri"`
+	ClientCertURI       string `mapstructure:"client_cert_uri" json:"client_cert_uri" yaml:"client_cert_uri" koanf:"client_cert_uri"`
+	ClientId            string `mapstructure:"client_id" json:"client_id" yaml:"client_id" koanf:"client_id"`
+}
 
-	var conf Config
-
+func (global *Config) SetConfig(configPath string) error {
 	if _, err := os.Stat(configPath); err != nil {
-		return
+		return fmt.Errorf("config file %q not accessible: %w", configPath, err)
 	}
 
 	ko := koanf.New(".")
-	// Load JSON common.
 	if err := ko.Load(file.Provider(configPath), yaml.Parser()); err != nil {
-		log.Fatalf("error loading common: %v", err)
-		return
+		return fmt.Errorf("load config %q: %w", configPath, err)
 	}
 
-	if err := ko.Unmarshal("", &conf); err != nil {
-		log.Fatal(err)
-		return
-	}
-	// check system params
-	if len(conf.System.User) > 0 {
-		global.System.User = conf.System.User
-	}
-	if len(conf.System.Password) > 0 {
-		global.System.Password = conf.System.Password
-	}
-	if len(conf.System.Addr) > 0 {
-		global.System.Addr = conf.System.Addr
-	}
-	if len(conf.System.URLPrefix) > 0 {
-		global.System.URLPrefix = conf.System.URLPrefix
-	}
-	if len(conf.System.DataDir) > 0 {
-		global.System.DataDir = conf.System.DataDir
+	if err := ko.UnmarshalWithConf("", global, koanf.UnmarshalConf{
+		Tag: "koanf",
+		DecoderConfig: &mapstructure.DecoderConfig{
+			DecodeHook: mapstructure.ComposeDecodeHookFunc(
+				mapstructure.StringToTimeDurationHookFunc(),
+				mapstructure.StringToSliceHookFunc(","),
+			),
+		},
+	}); err != nil {
+		return fmt.Errorf("parse config %q: %w", configPath, err)
 	}
 
-	if len(conf.System.DSN) > 0 {
-		global.System.DSN = conf.System.DSN
-	}
-
-	if len(conf.System.Cert) > 0 {
-		global.System.Cert = conf.System.Cert
-	}
-	if len(conf.System.Key) > 0 {
-		global.System.Key = conf.System.Key
-	}
-
-	global.System.ReduceMemoryUsage = conf.System.ReduceMemoryUsage
-	global.System.Voice = conf.System.Voice
-	if len(conf.System.ProxyHeader) > 0 {
-		global.System.ProxyHeader = conf.System.ProxyHeader
-	}
-	if conf.System.MaxBatchPushCount > 0 {
-		global.System.MaxBatchPushCount = conf.System.MaxBatchPushCount
-	}
-	if conf.System.MaxAPNSClientCount > 0 {
-		global.System.MaxAPNSClientCount = conf.System.MaxAPNSClientCount
-	}
-	if conf.System.Concurrency > 0 {
-		global.System.Concurrency = conf.System.Concurrency
-	}
-	if conf.System.ReadTimeout > 0 {
-		global.System.ReadTimeout = conf.System.ReadTimeout
-	}
-	if conf.System.WriteTimeout > 0 {
-		global.System.WriteTimeout = conf.System.WriteTimeout
-	}
-	if conf.System.IdleTimeout > 0 {
-		global.System.IdleTimeout = conf.System.IdleTimeout
-	}
-	global.System.Debug = conf.System.Debug
-	global.System.HideHome = conf.System.HideHome
-	if len(conf.System.Version) > 0 {
-		global.System.Version = conf.System.Version
-	}
-	if len(conf.System.BuildDate) > 0 {
-		global.System.BuildDate = conf.System.BuildDate
-	}
-	if len(conf.System.CommitID) > 0 {
-		global.System.CommitID = conf.System.CommitID
-	}
-
-	if len(conf.System.ICPInfo) > 0 {
-		global.System.ICPInfo = conf.System.ICPInfo
-	}
-	if len(conf.System.TimeZone) > 0 {
-		global.System.TimeZone = conf.System.TimeZone
-	}
-
-	if len(conf.Apple.ApnsPrivateKey) > 0 {
-		global.Apple.ApnsPrivateKey = conf.Apple.ApnsPrivateKey
-	}
-	if len(conf.Apple.Topic) > 0 {
-		global.Apple.Topic = conf.Apple.Topic
-	}
-	if len(conf.Apple.KeyID) > 0 {
-		global.Apple.KeyID = conf.Apple.KeyID
-	}
-	if len(conf.Apple.TeamID) > 0 {
-		global.Apple.TeamID = conf.Apple.TeamID
-	}
-	global.Apple.Develop = conf.Apple.Develop
+	return nil
 }

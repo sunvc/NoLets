@@ -55,7 +55,9 @@ func main() {
 			}
 
 			if configPath := command.String("config"); configPath != "" {
-				common.LocalConfig.SetConfig(configPath)
+				if err := common.LocalConfig.SetConfig(configPath); err != nil {
+					log.Fatal(err)
+				}
 			}
 
 			// Custom HTTPS: self-sign a cert only if the user didn't supply one,
