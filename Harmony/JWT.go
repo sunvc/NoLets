@@ -1,11 +1,9 @@
 package Harmony
 
 import (
-	"encoding/json"
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
@@ -14,45 +12,22 @@ import (
 )
 
 var (
-	token          string
-	expiration     = time.Now()
-	ServiceAccount *ServiceAccountKey
+	token      string
+	expiration = time.Now()
 )
-
-const (
-	CLIENT_ID = "1823455105496688320"
-)
-
-func init() {
-	_, _ = GetToken()
-}
-
-type ServiceAccountKey struct {
-	ProjectId           string `json:"project_id"`
-	KeyID               string `json:"key_id"`
-	PrivateKey          string `json:"private_key"`
-	SubAccount          string `json:"sub_account"`
-	AuthUri             string `json:"auth_uri"`
-	TokenUri            string `json:"token_uri"`
-	AuthProviderCertUri string `json:"auth_provider_cert_uri"`
-	ClientCertUri       string `json:"client_cert_uri"`
-}
 
 func GetToken() (string, error) {
 	var err error
+	saKey := common.LocalConfig.Harmony
 
-	if ServiceAccount == nil {
+	fmt.Println(saKey)
 
-		ServiceAccount, err = loadServiceAccountKey(common.BaseDir("private.json"))
-		if err != nil {
-			token = ""
-			expiration = time.Now()
-			return "", err
-		}
+	if saKey.KeyID == "" || saKey.SubAccount == "" || saKey.PrivateKey == "" {
+		return "", errors.New("invalid service account key file: missing required fields")
 	}
 
 	if expiration.Before(time.Now()) {
-		token, err = generateJWTToken(ServiceAccount)
+		token, err = generateJWTToken(saKey)
 		if err != nil {
 			expiration = time.Now()
 			token = ""
@@ -66,7 +41,7 @@ func GetToken() (string, error) {
 	return token, nil
 }
 
-func generateJWTToken(saKey *ServiceAccountKey) (string, error) {
+func generateJWTToken(saKey common.Harmony) (string, error) {
 
 	formattedPrivateKey, err := formatPrivateKey(saKey.PrivateKey)
 	if err != nil {
@@ -78,7 +53,7 @@ func generateJWTToken(saKey *ServiceAccountKey) (string, error) {
 		return "", fmt.Errorf("failed to parse private key: %w", err)
 	}
 
-	token, err := buildJWTToken(saKey.KeyID, saKey.TokenUri, saKey.SubAccount)
+	token, err := buildJWTToken(saKey.KeyID, saKey.TokenURI, saKey.SubAccount)
 	if err != nil {
 		return "", err
 	}
@@ -108,25 +83,6 @@ func buildJWTToken(keyID, aud, subAccount string) (*jwt.Token, error) {
 	token.Header["alg"] = "PS256"
 
 	return token, nil
-}
-
-// loadServiceAccountKey 从 JSON 文件加载服务账号密钥
-func loadServiceAccountKey(filename string) (*ServiceAccountKey, error) {
-	data, err := os.ReadFile(filename)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read key file: %w", err)
-	}
-
-	var saKey ServiceAccountKey
-	if err := json.Unmarshal(data, &saKey); err != nil {
-		return nil, fmt.Errorf("failed to parse key file: %w", err)
-	}
-
-	if saKey.KeyID == "" || saKey.SubAccount == "" || saKey.PrivateKey == "" {
-		return nil, errors.New("invalid service account key file: missing required fields")
-	}
-
-	return &saKey, nil
 }
 
 // formatPrivateKey 格式化私钥字符串为 PEM 格式

@@ -181,15 +181,29 @@ apple:
   keyID: ""                        # APNs Key ID
   teamID: ""                       # APNs Team ID
   develop: false                   # 启用APNs开发环境
+
+harmony:
+  project_id: ""                  # 鸿蒙AGC项目ID（推送URL使用）
+  key_id: ""                      # 服务账号Key ID（JWT kid）
+  private_key: ""                 # 服务账号RSA私钥（PEM内容，需真实换行）
+  sub_account: ""                 # 服务账号/子账号（JWT iss）
+  client_id: ""                   # 应用Client ID（撤销推送时使用）
+  auth_uri: "https://oauth-login.cloud.huawei.com/oauth2/v3/authorize"
+  token_uri: "https://oauth-login.cloud.huawei.com/oauth2/v3/token"
+  auth_provider_cert_uri: "https://oauth-login.cloud.huawei.com/oauth2/v3/certs"
+  client_cert_uri: "https://oauth-login.cloud.huawei.com/oauth2/v3/x509?client_id="
+  develop: false                  # 鸿蒙测试推送
 ```
 
 ## 服务配置方式
 
-服务可以通过以下三种方式配置，优先级从高到低：
+服务可以通过以下三种方式配置。使用 `--config`/`-c` 时，优先级从高到低为：
 
-1. **命令行参数**：启动时指定的参数，优先级最高
-2. **环境变量**：系统环境变量，次优先级
-3. **配置文件**：`config.yaml`文件或通过`--config`/`-c`参数指定的配置文件
+1. **配置文件**：配置文件中出现的键优先级最高（即使值为空字符串也会覆盖环境变量）
+2. **命令行参数**：启动时指定的参数
+3. **环境变量**：系统环境变量
+
+不使用 `-c` 时，优先级为：命令行参数 > 环境变量 > 内置默认值。
 
 ### 命令行参数和环境变量
 
@@ -222,6 +236,16 @@ apple:
 | `--key-id` | `NOLET_APPLE_KEY_ID` | APNs Key ID | `BNY5GUGV38` |
 | `--team-id` | `NOLET_APPLE_TEAM_ID` | APNs Team ID | `FUWV6U942Q` |
 | `--develop`, `--dev` | `NOLET_APPLE_DEVELOP` | 使用 APNs 开发环境 | `false` |
+| `--hm-project-id` | `NOLET_HM_PROJECT_ID` | 鸿蒙 AGC 项目 ID（推送 URL） |  |
+| `--hm-key-id` | `NOLET_HM_KEY_ID` | 鸿蒙服务账号 Key ID（JWT kid） |  |
+| `--hm-private-key` | `NOLET_HM_PRIVATE_KEY` | 鸿蒙服务账号 RSA 私钥（PEM 内容，需真实换行） |  |
+| `--hm-sub-account` | `NOLET_HM_SUB_ACCOUNT` | 鸿蒙服务账号/子账号（JWT iss） |  |
+| `--hm-client-id` | `NOLET_HM_CLIENT_ID` | 鸿蒙应用 Client ID（撤销推送时使用） |  |
+| `--hm-auth-uri` | `NOLET_HM_AUTH_URI` | 鸿蒙 OAuth 授权地址 | `https://oauth-login.cloud.huawei.com/oauth2/v3/authorize` |
+| `--hm-token-uri` | `NOLET_HM_TOKEN_URI` | 鸿蒙 OAuth Token 地址（JWT aud） | `https://oauth-login.cloud.huawei.com/oauth2/v3/token` |
+| `--hm-auth-provider-cert-uri` | `NOLET_HM_AUTH_PROVIDER_CERT_URI` | 鸿蒙授权方证书地址 | `https://oauth-login.cloud.huawei.com/oauth2/v3/certs` |
+| `--hm-client-cert-uri` | `NOLET_HM_CLIENT_CERT_URI` | 鸿蒙客户端证书地址 | `https://oauth-login.cloud.huawei.com/oauth2/v3/x509?client_id=` |
+| `--hm-develop` | `NOLET_HM_DEVELOP` | 鸿蒙测试推送 | `false` |
 | `--Expired`, `--ex` | `NOLET_EXPIRED_TIME` | 语音过期时间（秒） | `120` |
 | `--ICP`, `--icp` | `NOLET_ICP_INFO` | ICP 备案信息 |  |
 | `--config`, `-c` |  | 配置文件路径 |  |
@@ -246,6 +270,34 @@ apple:
 
 3. 配置文件与命令行参数混合使用：
    ```bash
-   # 配置文件中的设置会被命令行参数覆盖
+   # 注意：配置文件中写出的键会覆盖命令行参数，仅未在文件中出现的键使用参数值
    ./NoLets -c /path/to/your/config.yaml --debug --addr 127.0.0.1:8080
    ```
+
+## 鸿蒙推送（HarmonyOS Push Kit）
+
+除 Apple APNs 外，服务端同时支持 HarmonyOS Push Kit。推送时会按用户设备的 OS 类型自动分流，无需额外开关，配置好鸿蒙凭据即可。
+
+### 认证流程
+
+1. 使用服务账号的 RSA 私钥以 **PS256** 算法签名 JWT：`kid` 为 Key ID，`iss` 为子账号，`aud` 为 Token URI，有效期 1 小时（程序会缓存并提前刷新）；
+2. 普通推送调用 `https://push-api.cloud.huawei.com/v3/{项目ID}/messages:send`，请求头携带 `Authorization: Bearer <JWT>`；
+3. 后台静默推送（无通知内容）调用 `messages:revoke` 撤销消息，此时 URL 中使用 **Client ID**。
+
+### 凭据获取（AppGallery Connect）
+
+| 配置项 | 获取位置 |
+|--------|----------|
+| 项目 ID `project_id` | AGC →「项目设置」→「常规」→ 项目 ID |
+| Client ID `client_id` | AGC →「项目设置」→「常规」→ 应用信息 → Client ID |
+| Key ID `key_id` | AGC →「用户与访问」→「服务账号」→ 创建/查看密钥 |
+| 私钥 `private_key` | 创建服务账号密钥时下载的 PEM 文件内容 |
+| 子账号 `sub_account` | AGC →「用户与访问」→「服务账号」中对应账号 |
+
+### 注意事项
+
+- **私钥换行**：PEM 必须包含真实换行。通过环境变量注入时使用单引号并直接粘贴多行内容；写在双引号里的 `\n` 不会被 shell 转义，程序收到的是字面的反斜杠加 n，会导致 PEM 解析失败。
+- **环境变量大小写**：测试推送开关变量为全大写的 `NOLET_HM_DEVELOP`，Linux 下环境变量大小写敏感。
+- **与配置文件同时使用**：`-c` 指定的配置文件中 harmony 段写出的键（包括空字符串）会覆盖同名环境变量；若希望完全由环境变量配置，请勿使用 `-c`。
+- **测试推送**：开启 `--hm-develop` 或系统 `--debug` 后，推送请求会以测试消息（`TestMessage`）发送。
+

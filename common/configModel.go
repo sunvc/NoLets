@@ -69,6 +69,7 @@ type Harmony struct {
 	AuthProviderCertURI string `mapstructure:"auth_provider_cert_uri" json:"auth_provider_cert_uri" yaml:"auth_provider_cert_uri" koanf:"auth_provider_cert_uri"`
 	ClientCertURI       string `mapstructure:"client_cert_uri" json:"client_cert_uri" yaml:"client_cert_uri" koanf:"client_cert_uri"`
 	ClientId            string `mapstructure:"client_id" json:"client_id" yaml:"client_id" koanf:"client_id"`
+	Develop             bool   `mapstructure:"develop" json:"develop" yaml:"develop" koanf:"develop"`
 }
 
 func (global *Config) SetConfig(configPath string) error {

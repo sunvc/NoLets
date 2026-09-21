@@ -172,15 +172,29 @@ apple:
   keyID: ""                 # APNs Key ID
   teamID: ""                # APNs Team ID
   develop: false            # Enable APNs development environment
+
+harmony:
+  project_id: ""            # HarmonyOS AGC project ID (used in push URL)
+  key_id: ""                # Service account key ID (JWT kid)
+  private_key: ""           # Service account RSA private key (PEM content, real newlines required)
+  sub_account: ""           # Service / sub account (JWT iss)
+  client_id: ""             # App client ID (used for message revocation)
+  auth_uri: "https://oauth-login.cloud.huawei.com/oauth2/v3/authorize"
+  token_uri: "https://oauth-login.cloud.huawei.com/oauth2/v3/token"
+  auth_provider_cert_uri: "https://oauth-login.cloud.huawei.com/oauth2/v3/certs"
+  client_cert_uri: "https://oauth-login.cloud.huawei.com/oauth2/v3/x509?client_id="
+  develop: false            # HarmonyOS test push
 ```
 
 ## Service Configuration Methods
 
-The service can be configured in the following three ways, with priority from high to low:
+The service can be configured in three ways. When `--config`/`-c` is used, priority from high to low is:
 
-1. **Command-line parameters**: Parameters specified at startup, highest priority
-2. **Environment variables**: System environment variables, second priority
-3. **Configuration file**: `config.yaml` file or configuration file specified via `--config`/`-c` parameter
+1. **Configuration file**: keys present in the file have the highest priority (even empty-string values override environment variables)
+2. **Command-line parameters**: Parameters specified at startup
+3. **Environment variables**: System environment variables
+
+Without `-c`, priority is: command-line parameters > environment variables > built-in defaults.
 
 ### Command-line Parameters and Environment Variables
 
@@ -214,6 +228,16 @@ The service can be configured in the following three ways, with priority from hi
 | `--key-id` | `NOLET_APPLE_KEY_ID` | APNs Key ID | `BNY5GUGV38` |
 | `--team-id` | `NOLET_APPLE_TEAM_ID` | APNs Team ID | `FUWV6U942Q` |
 | `--develop`, `--dev` | `NOLET_APPLE_DEVELOP` | Use APNs development environment | `false` |
+| `--hm-project-id` | `NOLET_HM_PROJECT_ID` | HarmonyOS AGC project ID (push URL) |  |
+| `--hm-key-id` | `NOLET_HM_KEY_ID` | HarmonyOS service account key ID (JWT kid) |  |
+| `--hm-private-key` | `NOLET_HM_PRIVATE_KEY` | HarmonyOS service account RSA private key (PEM content, real newlines required) |  |
+| `--hm-sub-account` | `NOLET_HM_SUB_ACCOUNT` | HarmonyOS service / sub account (JWT iss) |  |
+| `--hm-client-id` | `NOLET_HM_CLIENT_ID` | HarmonyOS app client ID (message revocation) |  |
+| `--hm-auth-uri` | `NOLET_HM_AUTH_URI` | HarmonyOS OAuth authorize URI | `https://oauth-login.cloud.huawei.com/oauth2/v3/authorize` |
+| `--hm-token-uri` | `NOLET_HM_TOKEN_URI` | HarmonyOS OAuth token URI (JWT aud) | `https://oauth-login.cloud.huawei.com/oauth2/v3/token` |
+| `--hm-auth-provider-cert-uri` | `NOLET_HM_AUTH_PROVIDER_CERT_URI` | HarmonyOS auth provider cert URI | `https://oauth-login.cloud.huawei.com/oauth2/v3/certs` |
+| `--hm-client-cert-uri` | `NOLET_HM_CLIENT_CERT_URI` | HarmonyOS client cert URI | `https://oauth-login.cloud.huawei.com/oauth2/v3/x509?client_id=` |
+| `--hm-develop` | `NOLET_HM_DEVELOP` | HarmonyOS test push | `false` |
 | `--Expired`, `--ex` | `NOLET_EXPIRED_TIME` | Voice expiration time (seconds) | `120` |
 | `--ICP`, `--icp` | `NOLET_ICP_INFO` | ICP filing information |  |
 | `--config`, `-c` |  | Configuration file path |  |
@@ -237,7 +261,35 @@ The service can be configured in the following three ways, with priority from hi
 
 3. Mixed use of configuration file and command-line parameters:
    ```bash
-   # Settings in the configuration file will be overridden by command-line parameters
+   # Note: keys present in the config file override command-line parameters;
+   # only keys missing from the file fall back to parameter values.
    ./NoLets -c /path/to/your/config.yaml --debug --addr 127.0.0.1:8080
    ```
+
+## HarmonyOS Push Kit
+
+In addition to Apple APNs, the server supports HarmonyOS Push Kit. Push requests are routed automatically by the user's device OS — no extra switch is needed, just configure the HarmonyOS credentials.
+
+### Authentication Flow
+
+1. Sign a JWT with the service account RSA private key using **PS256**: `kid` is the key ID, `iss` is the sub account, `aud` is the token URI; valid for 1 hour (cached and refreshed ahead of expiry);
+2. Normal pushes call `https://push-api.cloud.huawei.com/v3/{projectID}/messages:send` with `Authorization: Bearer <JWT>`;
+3. Silent background pushes (no notification content) call `messages:revoke`, which uses the **Client ID** in the URL instead.
+
+### Obtaining Credentials (AppGallery Connect)
+
+| Field | Where to find it |
+|-------|------------------|
+| Project ID `project_id` | AGC → Project settings → General → Project ID |
+| Client ID `client_id` | AGC → Project settings → General → App information → Client ID |
+| Key ID `key_id` | AGC → Users and permissions → Service accounts → create/view key |
+| Private key `private_key` | PEM file downloaded when creating the service account key |
+| Sub account `sub_account` | The corresponding account under AGC → Users and permissions → Service accounts |
+
+### Notes
+
+- **Private key newlines**: the PEM must contain real newlines. When injecting via environment variable, use single quotes and paste the multi-line content directly; `\n` inside double quotes is not interpreted by the shell, so the program receives literal backslash-n and PEM parsing fails.
+- **Variable case**: the test-push variable is the all-uppercase `NOLET_HM_DEVELOP`. Environment variable names are case-sensitive on Linux.
+- **Together with a config file**: keys written under the harmony section of a `-c` config file (including empty strings) override same-named environment variables. To configure purely via environment variables, do not use `-c`.
+- **Test push**: with `--hm-develop` (or system `--debug`), push requests are sent as test messages (`TestMessage`).
 

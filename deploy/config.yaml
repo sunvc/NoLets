@@ -30,7 +30,7 @@ system:
   importPath: ""
   icp_info: ""
   time_zone: ""
-  auths: [ ]
+  auths: []
 apple:
   apnsPrivateKey: |-
     -----BEGIN PRIVATE KEY-----
@@ -44,12 +44,14 @@ apple:
   teamID: FUWV6U942Q
   develop: false
 harmony:
-  project_id: "",
+  client_id: ""
+  project_id: ""
   key_id: "",
-  private_key: "",
-  sub_account: "",
-  auth_uri: "",
-  token_uri: "",
-  auth_provider_cert_uri: "",
-  client_cert_uri: ""
+  private_key: ""
+  sub_account: ""
+  auth_uri: "https://oauth-login.cloud.huawei.com/oauth2/v3/authorize"
+  token_uri: "https://oauth-login.cloud.huawei.com/oauth2/v3/token"
+  auth_provider_cert_uri: "https://oauth-login.cloud.huawei.com/oauth2/v3/certs"
+  client_cert_uri: "https://oauth-login.cloud.huawei.com/oauth2/v3/x509?client_id="
+  develop: true
 
