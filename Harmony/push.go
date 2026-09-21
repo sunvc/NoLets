@@ -32,10 +32,7 @@ func AutoPush(params *common.ParamsResult) error {
 
 	if params.PushType == apns2.PushTypeBackground {
 		if tem := params.GetString(common.ID); tem != "" {
-			if temaNumber, err := strconv.Atoi(tem); err == nil {
-				return Delete(temaNumber, tokens)
-			}
-			return errors.New("needed Number ID")
+			return Delete(int(UUIDToInt31(tem)), tokens)
 		}
 		return errors.New("NOT ID")
 	}
@@ -43,7 +40,8 @@ func AutoPush(params *common.ParamsResult) error {
 }
 
 func Push(params *common.ParamsResult, tokens []string) error {
-	url := fmt.Sprintf("https://push-api.cloud.huawei.com/v3/%s/messages:send", ServiceAccount.ProjectId)
+	ProjectId := common.LocalConfig.Harmony.ProjectID
+	url := fmt.Sprintf("https://push-api.cloud.huawei.com/v3/%s/messages:send", ProjectId)
 	// 构建推送请求体
 	req := PushRequest{
 		Payload: Payload{
@@ -53,6 +51,10 @@ func Push(params *common.ParamsResult, tokens []string) error {
 				Body:     "Please handle it in time",
 				ClickAction: ClickAction{
 					ActionType: 0,
+					Data: map[string]interface{}{
+						string(common.ID):  params.GetString(common.ID),
+						string(common.URL): params.GetString(common.URL),
+					},
 				},
 			},
 		},
@@ -120,7 +122,8 @@ func Push(params *common.ParamsResult, tokens []string) error {
 }
 
 func Delete(notifyId int, tokens []string) error {
-	url := fmt.Sprintf("https://push-api.cloud.huawei.com/v1/%s/messages:revoke", CLIENT_ID)
+	ClientId := common.LocalConfig.Harmony.ClientId
+	url := fmt.Sprintf("https://push-api.cloud.huawei.com/v1/%s/messages:revoke", ClientId)
 	resp, err := sendPushMessage(url, 2, &DeleteRequest{
 		NotifyId: notifyId,
 		Token:    tokens,

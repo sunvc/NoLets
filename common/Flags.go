@@ -301,28 +301,28 @@ REJP/5bp
 			Usage:       "HarmonyOS OAuth 2.0 token auth URI",
 			Sources:     cli.EnvVars("NOLET_HM_AUTH_URI"),
 			Destination: &LocalConfig.Harmony.AuthURI,
-			Value:       "",
+			Value:       "https://oauth-login.cloud.huawei.com/oauth2/v3/authorize",
 		},
 		&cli.StringFlag{
 			Name:        "hm-token-uri",
 			Usage:       "HarmonyOS OAuth 2.0 token URI",
 			Sources:     cli.EnvVars("NOLET_HM_TOKEN_URI"),
 			Destination: &LocalConfig.Harmony.TokenURI,
-			Value:       "",
+			Value:       "https://oauth-login.cloud.huawei.com/oauth2/v3/token",
 		},
 		&cli.StringFlag{
 			Name:        "hm-auth-provider-cert-uri",
 			Usage:       "HarmonyOS auth provider cert URI",
 			Sources:     cli.EnvVars("NOLET_HM_AUTH_PROVIDER_CERT_URI"),
 			Destination: &LocalConfig.Harmony.AuthProviderCertURI,
-			Value:       "",
+			Value:       "https://oauth-login.cloud.huawei.com/oauth2/v3/certs",
 		},
 		&cli.StringFlag{
 			Name:        "hm-client-cert-uri",
 			Usage:       "HarmonyOS client cert URI",
 			Sources:     cli.EnvVars("NOLET_HM_CLIENT_CERT_URI"),
 			Destination: &LocalConfig.Harmony.ClientCertURI,
-			Value:       "",
+			Value:       "https://oauth-login.cloud.huawei.com/oauth2/v3/x509?client_id=",
 		},
 		&cli.StringFlag{
 			Name:        "hm-client-id",
@@ -330,6 +330,13 @@ REJP/5bp
 			Sources:     cli.EnvVars("NOLET_HM_CLIENT_ID"),
 			Destination: &LocalConfig.Harmony.ClientId,
 			Value:       "",
+		},
+		&cli.BoolFlag{
+			Name:        "hm-develop",
+			Usage:       "HarmonyOS Test Push",
+			Sources:     cli.EnvVars("NOLET_HM_DEVELOP"),
+			Destination: &LocalConfig.Harmony.Develop,
+			Value:       false,
 		},
 	}
 }
