@@ -7,12 +7,13 @@
 
 ## 安装与运行
 
-| App Store | Server Works  |
-|--------|-------|
-| [<img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Pushback App" height="40">](https://apps.apple.com/cn/app/id6615073345) | [![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://github.com/sunvc/nolets-worker) |
+### Server Works
+[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://github.com/sunvc/nolets-worker)
 
 
 ### 一键安装 (推荐)
+
+
 
 Linux / macOS (需已安装 Docker,Linux 未安装时脚本会自动安装 Docker):
 
