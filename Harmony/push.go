@@ -59,7 +59,7 @@ func Push(params *common.ParamsResult, tokens []string) error {
 			},
 		},
 		PushOptions: PushOptions{
-			TestMessage: true,
+			TestMessage: common.LocalConfig.Harmony.Develop,
 			CollapseKey: -1,
 		},
 		Target: Target{
